@@ -47,14 +47,13 @@
         .chevron { transition: transform 0.3s ease; }
         .dropdown.active .chevron { transform: rotate(180deg); }
 
-        /* Mobile fixes */
+        /* Mobile support */
         @media (max-width: 640px) {
             .tier-badge { font-size: 10px; padding: 2px 6px; }
             .leaderboard-table { min-width: 100% !important; }
             th, td { padding: 14px 8px !important; }
             .tiers-cell > div { gap: 8px; flex-wrap: wrap; justify-content: center; }
             .tiers-cell .flex-1 { flex-basis: 22%; }
-            .header-font { font-size: 1.35rem; }
         }
 
         #podium-container, #normal-leaderboard, #hall-of-fame {
@@ -151,7 +150,7 @@
     </div>
 </main>
 
-<!-- Modals (same as before) -->
+<!-- Modals -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
         <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add New Player</h3>
@@ -228,19 +227,14 @@
 
     function saveToStorage() { localStorage.setItem("mvp_leaderboards", JSON.stringify(data)); }
 
-    function renderCompactTiers(player, isRetired = false) {
+    function renderCompactTiers(player) {
         let html = '<div class="flex justify-between items-center w-full px-1 sm:px-2 gap-1">';
         [1,2,3,4].forEach(cat => {
             let tier = "-";
-            let suffix = "";
-            if (isRetired) {
-                tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : "-";
-                suffix = tier !== "-" ? " (Retired)" : "";
-            } else if (player.rank) {
-                tier = player.rank;
-            }
+            if (player.tiers && player.tiers[cat]) tier = player.tiers[cat];
+            else if (player.rank) tier = player.rank;
             const gradient = getTierGradient(tier);
-            html += `<div class="flex flex-col items-center flex-1 min-w-0"><div class="text-3xl mb-1">${gamemodeIcons[cat]}</div><span class="tier-badge w-full text-center" style="background-image: ${gradient}">${tier}${suffix}</span></div>`;
+            html += `<div class="flex flex-col items-center flex-1 min-w-0"><div class="text-3xl mb-1">${gamemodeIcons[cat]}</div><span class="tier-badge w-full text-center" style="background-image: ${gradient}">${tier}</span></div>`;
         });
         html += '</div>';
         return html;
@@ -250,10 +244,11 @@
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
-            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0};
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
+            entry.tiers[cat] = p.rank;
             playerMap.set(p.name, entry);
         }));
         let list = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || b.bestValue - a.bestValue).slice(0,3);
@@ -269,10 +264,11 @@
         const empty = document.getElementById("empty-state");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
-            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0};
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
+            entry.tiers[cat] = p.rank;
             playerMap.set(p.name, entry);
         }));
         let fullList = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || b.bestValue - a.bestValue);
@@ -299,9 +295,91 @@
         tbody.innerHTML = html;
     }
 
-    function renderPodium() { /* ... same as before ... */ }
-    function renderTable() { /* ... same as before ... */ }
-    function renderHallOfFame() { /* ... same as before with golden quotes ... */ }
+    function renderPodium() {
+        const container = document.getElementById("podium");
+        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
+        let html = "";
+        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
+        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
+        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
+        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById("leaderboard-body");
+        const empty = document.getElementById("empty-state");
+        let list = [...data[currentCategory]];
+        if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
+        const isRetired = currentCategory === 5;
+        let fullList = [...data[currentCategory]];
+        if (isRetired) fullList.sort((a,b) => getRetiredTotalValue(b) - getRetiredTotalValue(a));
+        if (list.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
+        empty.classList.add("hidden");
+        let html = "";
+        list.forEach(player => {
+            const trueRank = fullList.findIndex(p => p.id === player.id) + 1;
+            const points = isRetired ? getRetiredTotalValue(player) : getTierValue(player.rank);
+            const tiersHTML = isRetired ? renderCompactTiers(player, true) : `<span class="tier-badge" style="background-image: ${getTierGradient(player.rank)}">${player.rank}</span>`;
+            html += `<tr class="transition-colors">
+                <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
+                <td onclick="showPlayerDetail('${player.name}'); event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
+                    <div class="flex items-center gap-x-3"><img src="https://mc-heads.net/avatar/${player.name}/32" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
+                </td>
+                <td class="px-4 py-5 tiers-cell">${tiersHTML}</td>
+                <td class="px-6 py-5 font-mono text-amber-300 font-semibold text-right w-28">${points}</td>
+                <td class="px-8 py-5 text-right flex items-center gap-x-4 justify-end">
+                    <button onclick="moveUp(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-chevron-up"></i></button>
+                    <button onclick="moveDown(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-chevron-down"></i></button>
+                    <button onclick="editPlayer(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-blue-300"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deletePlayer(${player.id}); event.stopImmediatePropagation()" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function renderHallOfFame() {
+        const grid = document.getElementById("hof-grid");
+        let list = [...data[6]];
+        if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
+        if (list.length === 0) { grid.innerHTML = ""; return; }
+        let html = "";
+        list.forEach(player => {
+            let primeHTML = "";
+            if (player.primeTiers) {
+                const active = [];
+                [1,2,3,4].forEach(cat => {
+                    const tier = player.primeTiers[cat];
+                    if (tier && tier !== "-") active.push(`<div class="flex flex-col items-center flex-1"><div class="text-3xl mb-1">${gamemodeIcons[cat]}</div><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}</span></div>`);
+                });
+                if (active.length) primeHTML = `<div class="mt-4"><div class="text-xs text-amber-300 mb-2">PRIME IN</div><div class="flex justify-between">${active.join('')}</div></div>`;
+            }
+            html += `<div class="hof-card rounded-3xl overflow-hidden">
+                <div class="px-8 pt-8 pb-4 text-center">
+                    <p class="text-3xl font-bold">${player.name}</p>
+                    ${primeHTML}
+                </div>
+                <div class="flex justify-center py-8 px-8">
+                    <div class="skin-display"><img src="https://visage.surgeplay.com/full/1024/${player.name}" class="skin-render"></div>
+                </div>
+                <div class="px-8 pb-8 text-center">
+                    <p class="text-zinc-300 leading-relaxed text-lg italic">"${player.description || '—'}"</p>
+                    ${player.quote ? `<p class="mt-6 text-amber-300">"${player.quote}"</p>` : ''}
+                </div>
+                <div class="px-8 pb-8 flex justify-between items-center border-t border-zinc-800 pt-6">
+                    <div class="flex gap-x-3">
+                        <button onclick="moveUp(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-3xl px-3"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button onclick="moveDown(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-3xl px-3"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                    <div class="flex gap-x-5">
+                        <button onclick="editPlayer(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-2xl"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deletePlayer(${player.id}); event.stopImmediatePropagation()" class="text-red-400 hover:text-red-300 text-2xl"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        grid.innerHTML = html;
+    }
 
     function renderAll() {
         const isHoF = currentCategory === 6;
@@ -328,7 +406,219 @@
         else { if (!isRetired) renderPodium(); renderTable(); }
     }
 
-    /* All other functions (switchCategory, toggleGamemodes, showAddModal, savePlayer, etc.) are exactly the same as the previous working version */
+    function switchCategory(index) {
+        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('bg-zinc-900','text-blue-400'));
+        const tab = document.getElementById(`tab-${index}`);
+        if (tab) tab.classList.add('bg-zinc-900','text-blue-400');
+        currentCategory = index;
+        currentFilter = "";
+        document.getElementById("search-input").value = "";
+        document.getElementById("category-title").textContent = `${categories[index]} LEADERBOARD`;
+        renderAll();
+    }
+
+    function toggleGamemodes() {
+        document.getElementById("gamemodes-dropdown").classList.toggle("active");
+    }
+
+    function showAddModal(editId = null) {
+        const modal = document.getElementById("modal");
+        const title = document.getElementById("modal-title");
+        const isHoF = currentCategory === 6;
+        const isRetired = currentCategory === 5;
+
+        document.getElementById("edit-index").value = editId || "";
+        document.getElementById("is-hof").value = isHoF;
+
+        let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
+
+        if (isHoF) {
+            contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2021"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2024"></div></div><div class="space-y-4" id="prime-tiers-container"></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="4" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
+        } else if (isRetired) {
+            contentHTML += `<div class="space-y-4" id="retired-tiers-container"></div>`;
+        } else {
+            contentHTML += `<div><label class="block text-zinc-400 text-sm mb-1">Tier</label><select id="player-rank" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg">` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+        }
+
+        document.getElementById("modal-content").innerHTML = contentHTML;
+
+        if (isHoF) {
+            const container = document.getElementById("prime-tiers-container");
+            let html = `<div class="text-zinc-400 text-sm mb-2">Prime Gamemodes</div>`;
+            [1,2,3,4].forEach(cat => {
+                html += `<div class="flex items-center gap-x-4 mb-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="prime-tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not in prime</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+            });
+            container.innerHTML = html;
+        } else if (isRetired) {
+            const container = document.getElementById("retired-tiers-container");
+            let html = '';
+            [1,2,3,4].forEach(cat => {
+                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="retired-tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not retired</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        title.textContent = isHoF ? (editId ? "Edit Legend" : "Add New Legend") : (editId ? "Edit Player" : "Add New Player");
+
+        if (editId) {
+            const list = isHoF ? data[6] : data[currentCategory];
+            const player = list.find(p => p.id === editId);
+            if (player) {
+                document.getElementById("player-name").value = player.name;
+                if (isHoF) {
+                    document.getElementById("prime-from").value = player.primeFrom || "";
+                    document.getElementById("prime-to").value = player.primeTo || "";
+                    document.getElementById("player-description").value = player.description || "";
+                    document.getElementById("player-quote").value = player.quote || "";
+                    [1,2,3,4].forEach(cat => {
+                        const select = document.getElementById(`prime-tier-${cat}`);
+                        if (select && player.primeTiers && player.primeTiers[cat]) select.value = player.primeTiers[cat];
+                    });
+                } else if (isRetired) {
+                    [1,2,3,4].forEach(cat => {
+                        const select = document.getElementById(`retired-tier-${cat}`);
+                        if (select && player.retiredTiers && player.retiredTiers[cat]) select.value = player.retiredTiers[cat];
+                    });
+                } else {
+                    document.getElementById("player-rank").value = player.rank;
+                }
+            }
+        }
+
+        modal.classList.remove("hidden");
+    }
+
+    function hideModal() { document.getElementById("modal").classList.add("hidden"); }
+
+    function savePlayer() {
+        const name = document.getElementById("player-name").value.trim();
+        if (!name) return alert("Username is required!");
+
+        const isHoF = document.getElementById("is-hof").value === "true";
+        const isRetired = currentCategory === 5;
+        const editId = document.getElementById("edit-index").value;
+
+        if (isHoF) {
+            const description = document.getElementById("player-description").value.trim();
+            const quote = document.getElementById("player-quote").value.trim();
+            const primeFrom = parseInt(document.getElementById("prime-from").value) || null;
+            const primeTo = parseInt(document.getElementById("prime-to").value) || null;
+            const primeTiers = {};
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`prime-tier-${cat}`);
+                if (select && select.value) primeTiers[cat] = select.value;
+            });
+            if (editId) {
+                const player = data[6].find(p => p.id == editId);
+                if (player) { player.name = name; player.description = description; player.quote = quote; player.primeFrom = primeFrom; player.primeTo = primeTo; player.primeTiers = primeTiers; }
+            } else {
+                data[6].push({name, description, quote, primeFrom, primeTo, primeTiers, id: Date.now()});
+            }
+        } else if (isRetired) {
+            const retiredTiers = {};
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`retired-tier-${cat}`);
+                if (select && select.value) retiredTiers[cat] = select.value;
+            });
+            if (Object.keys(retiredTiers).length === 0) return alert("Select at least one gamemode!");
+            if (editId) {
+                const player = data[5].find(p => p.id == editId);
+                if (player) { player.name = name; player.retiredTiers = retiredTiers; }
+            } else {
+                data[5].push({name, retiredTiers, id: Date.now()});
+            }
+        } else {
+            const tier = document.getElementById("player-rank").value;
+            if (editId) {
+                const player = data[currentCategory].find(p => p.id == editId);
+                if (player) { player.name = name; player.rank = tier; }
+            } else {
+                data[currentCategory].push({name, rank: tier, id: Date.now()});
+            }
+        }
+
+        saveToStorage();
+        hideModal();
+        renderAll();
+    }
+
+    function editPlayer(id) { showAddModal(id); }
+
+    function deletePlayer(id) {
+        if (confirm("Delete this entry permanently?")) {
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.id !== id);
+            else data[currentCategory] = data[currentCategory].filter(p => p.id !== id);
+            saveToStorage();
+            renderAll();
+        }
+    }
+
+    function moveUp(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i <= 0) return;
+        [list[i], list[i-1]] = [list[i-1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function moveDown(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i >= list.length-1) return;
+        [list[i], list[i+1]] = [list[i+1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function filterTable() {
+        currentFilter = document.getElementById("search-input").value;
+        renderAll();
+    }
+
+    function resetData() {
+        if (confirm("Reset ALL data and start fresh?")) {
+            localStorage.removeItem("mvp_leaderboards");
+            location.reload();
+        }
+    }
+
+    function exportData() {
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = "mvp_leaderboards.json"; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData() {
+        const input = document.createElement("input");
+        input.type = "file"; input.accept = ".json";
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    Object.keys(data).forEach(k => data[k] = Array.isArray(imported[k]) ? imported[k] : []);
+                    saveToStorage();
+                    renderAll();
+                    alert("✅ Data imported successfully!");
+                } catch(err) { alert("Invalid JSON file"); }
+            };
+            reader.readAsText(e.target.files[0]);
+        };
+        input.click();
+    }
+
+    function showPlayerDetail(name) {
+        console.log("Detail for", name);
+    }
+
+    function hidePlayerDetail() {
+        document.getElementById("player-detail-modal").classList.add("hidden");
+    }
 
     window.onload = async function() {
         await loadData();
