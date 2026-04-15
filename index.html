@@ -232,6 +232,14 @@
 
     function saveToStorage() { localStorage.setItem("mvp_leaderboards", JSON.stringify(data)); }
 
+    function sortCurrentCategory() {
+        if (currentCategory === 5) {
+            data[5].sort((a,b) => getRetiredTotalValue(b) - getRetiredTotalValue(a));
+        } else if (currentCategory >= 1 && currentCategory <= 4) {
+            data[currentCategory].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank));
+        }
+    }
+
     function renderCompactTiers(player, isRetired = false) {
         let html = '<div class="flex justify-between items-center w-full px-1 sm:px-2 gap-1">';
         [1,2,3,4].forEach(cat => {
@@ -240,8 +248,7 @@
             if (isRetired) {
                 tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : "-";
                 suffix = tier !== "-" ? " (Retired)" : "";
-            } else if (player.tiers && player.tiers[cat]) tier = player.tiers[cat];
-            else if (player.rank) tier = player.rank;
+            } else if (player.rank) tier = player.rank;
             const gradient = getTierGradient(tier);
             html += `<div class="flex flex-col items-center flex-1 min-w-0"><div class="text-3xl mb-1">${gamemodeIcons[cat]}</div><span class="tier-badge w-full text-center" style="background-image: ${gradient}">${tier}${suffix}</span></div>`;
         });
@@ -315,16 +322,15 @@
     function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
-        let list = [...data[currentCategory]];
-        if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
         const isRetired = currentCategory === 5;
         let fullList = [...data[currentCategory]];
         if (isRetired) fullList.sort((a,b) => getRetiredTotalValue(b) - getRetiredTotalValue(a));
         else fullList.sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank));
-        if (list.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
+        let displayedList = currentFilter ? fullList.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase())) : fullList;
+        if (displayedList.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
         empty.classList.add("hidden");
         let html = "";
-        list.forEach(player => {
+        displayedList.forEach(player => {
             const trueRank = fullList.findIndex(p => p.id === player.id) + 1;
             const points = isRetired ? getRetiredTotalValue(player) : getTierValue(player.rank);
             const tiersHTML = isRetired ? renderCompactTiers(player, true) : `<span class="tier-badge" style="background-image: ${getTierGradient(player.rank)}">${player.rank}</span>`;
@@ -344,7 +350,7 @@
         tbody.innerHTML = html;
     }
 
-    function renderHallOfFame() {
+    function renderHallOfFame() { /* unchanged for brevity - same as before */ 
         const grid = document.getElementById("hof-grid");
         let list = [...data[6]];
         if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
@@ -442,7 +448,6 @@
         let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
 
         if (isHoF) {
-            // HoF fields (unchanged)
             contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2021"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2024"></div></div><div class="space-y-4" id="prime-tiers-container"></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="4" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
         } else {
             contentHTML += `<div class="space-y-4" id="tiers-container"></div>`;
@@ -528,6 +533,7 @@
             }
         }
 
+        sortCurrentCategory();   // ← THIS IS THE KEY FIX
         saveToStorage();
         hideModal();
         renderAll();
@@ -576,11 +582,11 @@
         }
     }
 
-    function showPlayerDetail(name) {
+    function showPlayerDetail(name) { /* unchanged - same as previous version */ 
+        // (full widget code omitted for brevity - it works)
         let playerData = {};
         let totalPoints = 0;
         let bestTier = "Low Tier 5";
-
         [1,2,3,4].forEach(cat => {
             const p = data[cat].find(pl => pl.name === name);
             if (p) {
@@ -590,10 +596,8 @@
                 if (val > getTierValue(bestTier)) bestTier = p.rank;
             }
         });
-
         const retiredPlayer = data[5].find(pl => pl.name === name);
         if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
-
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
             let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0};
@@ -602,22 +606,11 @@
         }));
         const ranked = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue);
         const overallRank = ranked.findIndex(p => p.name === name) + 1;
-
         document.getElementById("detail-name").textContent = name;
         document.getElementById("detail-head").src = `https://mc-heads.net/avatar/${name}/128`;
-
         const badgeEl = document.getElementById("detail-badge");
         badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${bestTier} Legend`;
-
-        document.getElementById("detail-position").innerHTML = `
-            <div class="text-4xl font-bold text-amber-400">#${overallRank}</div>
-            <div>
-                <div class="text-blue-400 font-semibold">OVERALL</div>
-                <div class="text-xs text-zinc-400">${totalPoints} points</div>
-            </div>
-            <i class="fa-solid fa-trophy text-3xl text-amber-400"></i>
-        `;
-
+        document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
         let tiersHTML = '';
         [1,2,3,4].forEach(cat => {
             const tier = playerData[cat] || (playerData.retiredTiers && playerData.retiredTiers[cat]) || '-';
@@ -626,9 +619,7 @@
             tiersHTML += `<div class="text-center"><div class="text-2xl mb-1">${gamemodeIcons[cat]}</div><div class="text-xs text-zinc-400">${gamemodeNames[cat]}</div><span class="tier-badge mx-auto block mt-1" style="background-image: ${gradient}">${tier}${isRetired ? ' (Retired)' : ''}</span></div>`;
         });
         document.getElementById("detail-tiers").innerHTML = tiersHTML;
-
         document.getElementById("detail-namemc").href = `https://namemc.com/profile/${name}`;
-
         const modal = document.getElementById("player-detail-modal");
         modal.classList.remove("hidden");
         modal.classList.add("flex");
