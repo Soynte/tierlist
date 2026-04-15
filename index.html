@@ -36,6 +36,10 @@
 
         .tiers-cell { min-width: 260px; max-width: 300px; }
         @media (max-width: 768px) { .tiers-cell { min-width: 180px; } }
+
+        /* Dropdown fixes */
+        .dropdown-content, .tierpoints-dropdown-content { display: none !important; }
+        .dropdown.active .dropdown-content, .tierpoints-dropdown.active .tierpoints-dropdown-content { display: block !important; }
     </style>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen">
@@ -53,7 +57,7 @@
         <nav class="flex items-center gap-x-2 sm:gap-x-6 text-sm font-medium">
             <a href="#" onclick="switchCategory(0)" id="tab-0" class="tab-link px-3 sm:px-4 py-2 rounded-xl hover:bg-zinc-900 transition-colors">OVERALL</a>
             <div id="gamemodes-dropdown" class="relative dropdown">
-                <button onclick="toggleGamemodes()" class="flex items-center gap-x-1 sm:gap-x-2 px-4 py-2 rounded-2xl hover:bg-zinc-900 transition-colors text-sm">
+                <button onclick="toggleGamemodes(event)" class="flex items-center gap-x-1 sm:gap-x-2 px-4 py-2 rounded-2xl hover:bg-zinc-900 transition-colors text-sm">
                     <span class="hidden sm:inline">GAME MODES</span>
                     <span class="sm:hidden">MODES</span>
                     <i class="fa-solid fa-chevron-down chevron"></i>
@@ -119,6 +123,7 @@
     </div>
 </main>
 
+<!-- Modals -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
         <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add / Edit Player</h3>
@@ -192,6 +197,7 @@
             let tier = "-";
             let suffix = "";
             if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
+            else if (player?.tiers?.[cat]) tier = player.tiers[cat];
             else if (player?.rank) tier = player.rank;
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
@@ -202,31 +208,34 @@
     function renderTierpointsContent() {
         const tiers = [{name:"High Tier 1",pts:100},{name:"Low Tier 1",pts:90},{name:"High Tier 2",pts:80},{name:"Low Tier 2",pts:70},{name:"High Tier 3",pts:60},{name:"Low Tier 3",pts:50},{name:"High Tier 4",pts:40},{name:"Low Tier 4",pts:30},{name:"High Tier 5",pts:20},{name:"Low Tier 5",pts:10}];
         let html = '';
-        tiers.forEach(t => {
-            html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="tier-badge" style="background-image: ${getTierGradient(t.name)}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} pts</span></div>`;
-        });
+        tiers.forEach(t => html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="tier-badge" style="background-image: ${getTierGradient(t.name)}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} pts</span></div>`);
         return html;
     }
 
     function toggleTierpointsDropdown(e) {
         e.stopImmediatePropagation();
         const dd = document.getElementById("tierpoints-dropdown");
-        const content = document.getElementById("tierpoints-content");
-        const chevron = document.getElementById("tier-chevron");
         const isActive = dd.classList.toggle("active");
-        chevron.style.transform = isActive ? "rotate(180deg)" : "";
+        document.getElementById("tier-chevron").style.transform = isActive ? "rotate(180deg)" : "";
     }
 
-    // Close dropdown when clicking anywhere else
+    function toggleGamemodes(e) {
+        e.stopImmediatePropagation();
+        document.getElementById("gamemodes-dropdown").classList.toggle("active");
+    }
+
+    // Close dropdowns when clicking outside
     document.addEventListener('click', function(e) {
-        const dd = document.getElementById("tierpoints-dropdown");
-        if (dd && !dd.contains(e.target)) {
-            dd.classList.remove("active");
+        const gamemodesDD = document.getElementById("gamemodes-dropdown");
+        const tierpointsDD = document.getElementById("tierpoints-dropdown");
+        if (gamemodesDD && !gamemodesDD.contains(e.target)) gamemodesDD.classList.remove("active");
+        if (tierpointsDD && !tierpointsDD.contains(e.target)) {
+            tierpointsDD.classList.remove("active");
             document.getElementById("tier-chevron").style.transform = "";
         }
     });
 
-    function renderOverallPodium() { /* same as before */ 
+    function renderOverallPodium() {
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -249,7 +258,6 @@
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
 
-        /* rest of renderOverall unchanged from last version */
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
             let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{}};
@@ -408,10 +416,6 @@
         document.getElementById("search-input").value = "";
         document.getElementById("category-title").textContent = ["Overall","Classic","UHC","Only Sword","Pot","Retired","Hall of Fame"][index] + " LEADERBOARD";
         renderAll();
-    }
-
-    function toggleGamemodes() {
-        document.getElementById("gamemodes-dropdown").classList.toggle("active");
     }
 
     function showAddModal(editId = null, isOverallEdit = false) {
