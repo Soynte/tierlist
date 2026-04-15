@@ -47,9 +47,7 @@
         .chevron { transition: transform 0.3s ease; }
         .dropdown.active .chevron { transform: rotate(180deg); }
 
-        .tierpoints-dropdown {
-            position: relative;
-        }
+        .tierpoints-dropdown { position: relative; }
         .tierpoints-dropdown-content {
             display: none;
             position: absolute;
@@ -59,7 +57,7 @@
             border: 2px solid #3b82f6;
             border-radius: 16px;
             padding: 12px;
-            width: 240px;
+            width: 260px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.4);
             z-index: 50;
             font-size: 13px;
@@ -68,13 +66,15 @@
         .tierpoints-item {
             display: flex;
             justify-content: space-between;
-            padding: 4px 8px;
+            padding: 6px 10px;
             border-radius: 8px;
+            margin-bottom: 4px;
         }
         .tierpoints-item:hover { background: #3b82f6; color: white; }
 
         @media (max-width: 640px) {
             .tier-badge { font-size: 10px; padding: 2px 6px; }
+            .tierpoints-dropdown-content { width: 240px; }
         }
 
         #podium-container, #normal-leaderboard, #hall-of-fame {
@@ -307,7 +307,7 @@
         let html = '';
         tiers.forEach(t => {
             const gradient = getTierGradient(t.name);
-            html += `<div class="tierpoints-item flex items-center justify-between"><span class="tier-badge" style="background-image: ${gradient}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} Points</span></div>`;
+            html += `<div class="tierpoints-item"><span class="tier-badge" style="background-image: ${gradient}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} Points</span></div>`;
         });
         return html;
     }
@@ -504,12 +504,226 @@
         document.getElementById("gamemodes-dropdown").classList.toggle("active");
     }
 
-    function toggleTierpointsDropdown() {
-        toggleTierpointsDropdown(); // defined above
+    function showAddModal(editId = null, isOverallEdit = false) {
+        const modal = document.getElementById("modal");
+        const titleEl = document.getElementById("modal-title");
+        const isHoF = currentCategory === 6;
+        const isRetired = currentCategory === 5;
+
+        if (currentCategory === 0 && !editId) isOverallEdit = true;
+
+        document.getElementById("edit-index").value = editId || "";
+        document.getElementById("edit-mode").value = isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode");
+
+        titleEl.textContent = editId ? "Edit Player" : "Add Player";
+
+        let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
+
+        if (isHoF) {
+            contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2021"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2024"></div></div><div class="space-y-4" id="prime-tiers-container"></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="4" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
+        } else {
+            contentHTML += `<div class="space-y-4" id="tiers-container"></div>`;
+        }
+
+        document.getElementById("modal-content").innerHTML = contentHTML;
+
+        if (!isHoF) {
+            const container = document.getElementById("tiers-container");
+            let html = '';
+            const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
+            cats.forEach(cat => {
+                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set / Untiered</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        if (editId) {
+            let player;
+            if (isOverallEdit) {
+                for (let cat = 1; cat <= 4; cat++) {
+                    player = data[cat].find(p => p.id === editId);
+                    if (player) break;
+                }
+            } else {
+                player = data[currentCategory].find(p => p.id === editId);
+            }
+            if (player) {
+                document.getElementById("player-name").value = player.name;
+                const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
+                cats.forEach(cat => {
+                    const select = document.getElementById(`tier-${cat}`);
+                    if (select) {
+                        let currentTier = "";
+                        if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
+                        else if (isOverallEdit) {
+                            const p = data[cat].find(x => x.id === editId);
+                            if (p) currentTier = p.rank;
+                        } else if (player.rank) currentTier = player.rank;
+                        select.value = currentTier;
+                    }
+                });
+            }
+        }
+
+        modal.classList.remove("hidden");
     }
 
-    // All other functions (showAddModal, savePlayer, editPlayer, deletePlayer, showPlayerDetail, etc.) are unchanged from the previous working version
-    // (They are exactly the same as in the last fully working file you had)
+    function hideModal() { document.getElementById("modal").classList.add("hidden"); }
+
+    function savePlayer() {
+        const name = document.getElementById("player-name").value.trim();
+        if (!name) return alert("Username is required!");
+
+        const editId = document.getElementById("edit-index").value;
+        const editMode = document.getElementById("edit-mode").value;
+
+        if (editMode === "overall") {
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`tier-${cat}`);
+                const desiredTier = select ? select.value : "";
+                const idx = data[cat].findIndex(p => p.id == editId);
+                if (desiredTier && desiredTier !== "") {
+                    if (idx !== -1) data[cat][idx].rank = desiredTier;
+                    else data[cat].push({name, rank: desiredTier, id: Date.now()});
+                } else if (idx !== -1) data[cat].splice(idx, 1);
+            });
+        } else if (editMode === "retired") {
+            const retiredTiers = {};
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`tier-${cat}`);
+                if (select && select.value && select.value !== "") retiredTiers[cat] = select.value;
+            });
+            if (editId) {
+                const player = data[5].find(p => p.id == editId);
+                if (player) player.retiredTiers = retiredTiers;
+            } else {
+                data[5].push({name, retiredTiers, id: Date.now()});
+            }
+        } else {
+            const tier = document.getElementById("tier-" + currentCategory).value;
+            if (editId) {
+                const player = data[currentCategory].find(p => p.id == editId);
+                if (player) {
+                    if (tier && tier !== "") player.rank = tier;
+                    else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
+                }
+            } else if (tier && tier !== "") {
+                data[currentCategory].push({name, rank: tier, id: Date.now()});
+            }
+        }
+
+        saveToStorage();
+        hideModal();
+        renderAll();
+    }
+
+    function editPlayer(id) { showAddModal(id, false); }
+    function editPlayerFromOverall(name) { 
+        let id = null;
+        for (let cat = 1; cat <= 4; cat++) {
+            const player = data[cat].find(p => p.name === name);
+            if (player) { id = player.id; break; }
+        }
+        showAddModal(id, true);
+    }
+
+    function deletePlayer(id) {
+        if (confirm("Delete this entry permanently?")) {
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.id !== id);
+            else data[currentCategory] = data[currentCategory].filter(p => p.id !== id);
+            saveToStorage();
+            renderAll();
+        }
+    }
+
+    function deletePlayerByName(name) {
+        if (confirm("Delete this entry permanently?")) {
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.name !== name);
+            else data[currentCategory] = data[currentCategory].filter(p => p.name !== name);
+            saveToStorage();
+            renderAll();
+        }
+    }
+
+    function moveUp(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i <= 0) return;
+        [list[i], list[i-1]] = [list[i-1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function moveDown(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i >= list.length-1) return;
+        [list[i], list[i+1]] = [list[i+1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function filterTable() {
+        currentFilter = document.getElementById("search-input").value;
+        renderAll();
+    }
+
+    function resetData() {
+        if (confirm("Reset ALL data and start fresh?")) {
+            localStorage.removeItem("mvp_leaderboards");
+            location.reload();
+        }
+    }
+
+    function showPlayerDetail(name) {
+        let playerData = {};
+        let totalPoints = 0;
+        let bestTier = "Low Tier 5";
+        [1,2,3,4].forEach(cat => {
+            const p = data[cat].find(pl => pl.name === name);
+            if (p) {
+                playerData[cat] = p.rank;
+                const val = getTierValue(p.rank);
+                totalPoints += val;
+                if (val > getTierValue(bestTier)) bestTier = p.rank;
+            }
+        });
+        const retiredPlayer = data[5].find(pl => pl.name === name);
+        if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
+        const playerMap = new Map();
+        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0};
+            entry.totalValue += getTierValue(p.rank);
+            playerMap.set(p.name, entry);
+        }));
+        const ranked = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue);
+        const overallRank = ranked.findIndex(p => p.name === name) + 1;
+        document.getElementById("detail-name").textContent = name;
+        document.getElementById("detail-head").src = `https://mc-heads.net/avatar/${name}/128`;
+        const badgeEl = document.getElementById("detail-badge");
+        badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${bestTier} Legend`;
+        document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
+        let tiersHTML = '';
+        [1,2,3,4].forEach(cat => {
+            const tier = playerData[cat] || (playerData.retiredTiers && playerData.retiredTiers[cat]) || '-';
+            const isRetired = playerData.retiredTiers && playerData.retiredTiers[cat];
+            const gradient = getTierGradient(tier);
+            tiersHTML += `<div class="text-center"><div class="text-2xl mb-1">${gamemodeIcons[cat]}</div><div class="text-xs text-zinc-400">${gamemodeNames[cat]}</div><span class="tier-badge mx-auto block mt-1" style="background-image: ${gradient}">${tier}${isRetired ? ' (Retired)' : ''}</span></div>`;
+        });
+        document.getElementById("detail-tiers").innerHTML = tiersHTML;
+        document.getElementById("detail-namemc").href = `https://namemc.com/profile/${name}`;
+        const modal = document.getElementById("player-detail-modal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+    }
+
+    function hidePlayerDetail() {
+        const modal = document.getElementById("player-detail-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+    }
 
     window.onload = async function() {
         await loadData();
