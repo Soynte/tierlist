@@ -253,7 +253,7 @@
     function renderOverallPodium() {
         const container = document.getElementById("podium");
         const playerMap = new Map();
-        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+        [1,2,3,4].forEach(cat => (data[cat] || []).forEach(p => {
             let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
@@ -274,7 +274,7 @@
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
 
         const playerMap = new Map();
-        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+        [1,2,3,4].forEach(cat => (data[cat] || []).forEach(p => {
             let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, retiredTiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
@@ -283,7 +283,7 @@
             playerMap.set(p.name, entry);
         }));
 
-        data[5].forEach(p => {
+        (data[5] || []).forEach(p => {
             let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, retiredTiers: {}};
             entry.retiredTiers = p.retiredTiers || {};
             playerMap.set(p.name, entry);
@@ -318,7 +318,7 @@
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
 
         const isRetired = currentCategory === 5;
-        let fullList = [...data[currentCategory]];
+        let fullList = [...(data[currentCategory] || [])];
         if (isRetired) fullList.sort((a,b) => getRetiredTotalValue(b) - getRetiredTotalValue(a));
         else fullList.sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank));
         let displayedList = currentFilter ? fullList.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase())) : fullList;
@@ -347,7 +347,7 @@
 
     function renderPodium() {
         const container = document.getElementById("podium");
-        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
+        let list = [...(data[currentCategory] || [])].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
         let html = "";
         if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
         if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
@@ -358,7 +358,7 @@
     function renderHallOfFame() {
         document.getElementById("tierpoints-dropdown").style.display = "none";
         const grid = document.getElementById("hof-grid");
-        let list = [...data[6]];
+        let list = [...(data[6] || [])];
         if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
         let html = "";
         list.forEach(player => {
