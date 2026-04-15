@@ -442,14 +442,21 @@
         if (currentCategory === 0 && !editId) isOverallEdit = true;
 
         document.getElementById("edit-index").value = editId || "";
-        document.getElementById("edit-mode").value = isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode");
+        document.getElementById("edit-mode").value = isHoF ? "hof" : (isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode"));
 
         titleEl.textContent = editId ? "Edit Player" : "Add Player";
 
         let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
 
         if (isHoF) {
-            contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2021"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2024"></div></div><div class="space-y-4" id="prime-tiers-container"></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="4" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
+            contentHTML += `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2022"></div>
+                    <div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2025"></div>
+                </div>
+                <div class="mt-4"><label class="block text-zinc-400 text-sm mb-2">Prime Tiers</label><div id="prime-tiers-container" class="space-y-4"></div></div>
+                <div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="3" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div>
+                <div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
         } else {
             contentHTML += `<div class="space-y-4" id="tiers-container"></div>`;
         }
@@ -464,11 +471,20 @@
                 html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set / Untiered</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
             });
             container.innerHTML = html;
+        } else {
+            // Populate prime tier selects for Hall of Fame
+            const container = document.getElementById("prime-tiers-container");
+            let html = '';
+            [1,2,3,4].forEach(cat => {
+                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="prime-tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set / Untiered</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+            });
+            container.innerHTML = html;
         }
 
         if (editId) {
             let player;
-            if (isOverallEdit) {
+            if (isHoF) player = (data[6] || []).find(p => p.id === editId);
+            else if (isOverallEdit) {
                 for (let cat = 1; cat <= 4; cat++) {
                     player = (data[cat] || []).find(p => p.id === editId);
                     if (player) break;
@@ -477,20 +493,31 @@
                 player = (data[currentCategory] || []).find(p => p.id === editId);
             }
             if (player) {
-                document.getElementById("player-name").value = player.name;
-                const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
-                cats.forEach(cat => {
-                    const select = document.getElementById(`tier-${cat}`);
-                    if (select) {
-                        let currentTier = "";
-                        if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
-                        else if (isOverallEdit) {
-                            const p = (data[cat] || []).find(x => x.id === editId);
-                            if (p) currentTier = p.rank;
-                        } else if (player.rank) currentTier = player.rank;
-                        select.value = currentTier;
-                    }
-                });
+                document.getElementById("player-name").value = player.name || "";
+                if (isHoF) {
+                    document.getElementById("prime-from").value = player.primeFrom || "";
+                    document.getElementById("prime-to").value = player.primeTo || "";
+                    document.getElementById("player-description").value = player.description || "";
+                    document.getElementById("player-quote").value = player.quote || "";
+                    [1,2,3,4].forEach(cat => {
+                        const select = document.getElementById(`prime-tier-${cat}`);
+                        if (select && player.primeTiers && player.primeTiers[cat]) select.value = player.primeTiers[cat];
+                    });
+                } else {
+                    const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
+                    cats.forEach(cat => {
+                        const select = document.getElementById(`tier-${cat}`);
+                        if (select) {
+                            let currentTier = "";
+                            if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
+                            else if (isOverallEdit) {
+                                const p = (data[cat] || []).find(x => x.id === editId);
+                                if (p) currentTier = p.rank;
+                            } else if (player.rank) currentTier = player.rank;
+                            select.value = currentTier;
+                        }
+                    });
+                }
             }
         }
 
@@ -506,7 +533,32 @@
         const editId = document.getElementById("edit-index").value;
         const editMode = document.getElementById("edit-mode").value;
 
-        if (editMode === "overall") {
+        if (editMode === "hof") {
+            const primeFrom = document.getElementById("prime-from").value;
+            const primeTo = document.getElementById("prime-to").value;
+            const description = document.getElementById("player-description").value;
+            const quote = document.getElementById("player-quote").value;
+            const primeTiers = {};
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`prime-tier-${cat}`);
+                if (select && select.value && select.value !== "") primeTiers[cat] = select.value;
+            });
+
+            data[6] = data[6] || [];
+            if (editId) {
+                const player = data[6].find(p => p.id == editId);
+                if (player) {
+                    player.name = name;
+                    player.primeFrom = primeFrom;
+                    player.primeTo = primeTo;
+                    player.description = description;
+                    player.quote = quote;
+                    player.primeTiers = primeTiers;
+                }
+            } else {
+                data[6].push({name, primeFrom, primeTo, description, quote, primeTiers, id: Date.now()});
+            }
+        } else if (editMode === "overall") {
             [1,2,3,4].forEach(cat => {
                 data[cat] = data[cat] || [];
                 const select = document.getElementById(`tier-${cat}`);
@@ -550,7 +602,6 @@
     }
 
     function editPlayer(id) { showAddModal(id, false); }
-
     function editPlayerFromOverall(name) {
         let id = null;
         for (let cat = 1; cat <= 4; cat++) {
@@ -560,11 +611,8 @@
                 break;
             }
         }
-        if (id) {
-            showAddModal(id, true);
-        } else {
-            alert("Could not find player for editing. Please try again.");
-        }
+        if (id) showAddModal(id, true);
+        else alert("Could not find player for editing.");
     }
 
     function deletePlayer(id) {
