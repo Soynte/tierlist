@@ -18,7 +18,7 @@
             font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 9999px;
             display: inline-flex; align-items: center; justify-content: center; background: #52525b;
             color: transparent; background-clip: text; -webkit-background-clip: text;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap;
         }
 
         .modal { animation: modalPop 0.3s ease-out; }
@@ -47,12 +47,15 @@
         .chevron { transition: transform 0.3s ease; }
         .dropdown.active .chevron { transform: rotate(180deg); }
 
+        .points-legend {
+            display: flex; flex-wrap: wrap; gap: 10px; background: #27272a; padding: 8px 16px;
+            border-radius: 9999px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+
         @media (max-width: 640px) {
             .tier-badge { font-size: 10px; padding: 2px 6px; }
-            .leaderboard-table { min-width: 100% !important; }
-            th, td { padding: 14px 8px !important; }
-            .tiers-cell > div { gap: 8px; flex-wrap: wrap; justify-content: center; }
-            .tiers-cell .flex-1 { flex-basis: 22%; }
+            .points-legend { font-size: 11px; gap: 6px; padding: 6px 12px; }
         }
 
         #podium-container, #normal-leaderboard, #hall-of-fame {
@@ -64,22 +67,6 @@
         .player-detail-modal-content {
             background: linear-gradient(145deg, #1f2937, #111827);
             box-shadow: 0 0 80px -20px rgb(234 179 8);
-        }
-
-        .points-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            background: #27272a;
-            padding: 12px 20px;
-            border-radius: 16px;
-            margin-bottom: 16px;
-            font-size: 13px;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
     </style>
 </head>
@@ -131,16 +118,19 @@
     <div id="podium-container"><div id="podium" class="grid grid-cols-3 gap-6 mb-10"></div></div>
 
     <div id="normal-leaderboard" class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl">
-        <div class="px-4 sm:px-8 py-5 border-b border-zinc-800 flex items-center justify-between">
+        <!-- HEADER WITH TITLE LEFT + LEGEND + SEARCH RIGHT -->
+        <div class="px-4 sm:px-8 py-5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4">
             <h2 id="category-title" class="text-2xl font-semibold header-font tracking-widest">OVERALL LEADERBOARD</h2>
-            <div class="flex items-center gap-x-4 text-sm">
-                <input id="search-input" onkeyup="if(event.key==='Enter') filterTable()" placeholder="Search player..." class="bg-zinc-800 border border-zinc-700 focus:border-blue-400 rounded-2xl px-4 py-2 w-48 sm:w-64 outline-none text-sm">
-                <button onclick="filterTable()" class="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm font-medium"><i class="fa-solid fa-magnifying-glass"></i></button>
+            
+            <!-- Legend + Search on the right -->
+            <div class="flex items-center gap-6">
+                <div id="points-legend" class="points-legend"></div>
+                <div class="flex items-center gap-x-4 text-sm">
+                    <input id="search-input" onkeyup="if(event.key==='Enter') filterTable()" placeholder="Search player..." class="bg-zinc-800 border border-zinc-700 focus:border-blue-400 rounded-2xl px-4 py-2 w-48 sm:w-64 outline-none text-sm">
+                    <button onclick="filterTable()" class="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm font-medium"><i class="fa-solid fa-magnifying-glass"></i></button>
+                </div>
             </div>
         </div>
-
-        <!-- NEW TIER POINTS LEGEND -->
-        <div id="points-legend" class="points-legend mx-4 sm:mx-8 mt-4 hidden"></div>
 
         <div class="overflow-x-auto">
             <table class="leaderboard-table w-full">
@@ -174,7 +164,7 @@
     </div>
 </main>
 
-<!-- Modals (unchanged) -->
+<!-- Modals and Player Detail Widget (unchanged from previous working version) -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
         <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add Player</h3>
@@ -188,7 +178,6 @@
     </div>
 </div>
 
-<!-- Player Detail Widget (unchanged) -->
 <div id="player-detail-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[1000]">
     <div class="player-detail-modal-content rounded-3xl w-full max-w-md mx-4 overflow-hidden relative">
         <button onclick="hidePlayerDetail()" class="absolute top-4 right-4 text-zinc-400 hover:text-white text-2xl z-10"><i class="fa-solid fa-xmark"></i></button>
@@ -278,28 +267,43 @@
     }
 
     function renderPointsLegend() {
-        let legendHTML = `
-            <div class="flex flex-wrap gap-3 text-xs">
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 1')}">High Tier 1</span><span class="text-amber-300 font-medium ml-1">100 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 1')}">Low Tier 1</span><span class="text-amber-300 font-medium ml-1">90 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 2')}">High Tier 2</span><span class="text-amber-300 font-medium ml-1">80 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 2')}">Low Tier 2</span><span class="text-amber-300 font-medium ml-1">70 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 3')}">High Tier 3</span><span class="text-amber-300 font-medium ml-1">60 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 3')}">Low Tier 3</span><span class="text-amber-300 font-medium ml-1">50 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 4')}">High Tier 4</span><span class="text-amber-300 font-medium ml-1">40 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 4')}">Low Tier 4</span><span class="text-amber-300 font-medium ml-1">30 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 5')}">High Tier 5</span><span class="text-amber-300 font-medium ml-1">20 pts</span></div>
-                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 5')}">Low Tier 5</span><span class="text-amber-300 font-medium ml-1">10 pts</span></div>
+        return `
+            <div class="points-legend">
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 1')}">H1</span><span class="text-amber-300">100</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 1')}">L1</span><span class="text-amber-300">90</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 2')}">H2</span><span class="text-amber-300">80</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 2')}">L2</span><span class="text-amber-300">70</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 3')}">H3</span><span class="text-amber-300">60</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 3')}">L3</span><span class="text-amber-300">50</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 4')}">H4</span><span class="text-amber-300">40</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 4')}">L4</span><span class="text-amber-300">30</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('High Tier 5')}">H5</span><span class="text-amber-300">20</span></div>
+                <div class="legend-item"><span class="tier-badge" style="background-image: ${getTierGradient('Low Tier 5')}">L5</span><span class="text-amber-300">10</span></div>
             </div>`;
-        return legendHTML;
+    }
+
+    function renderOverallPodium() {
+        const container = document.getElementById("podium");
+        const playerMap = new Map();
+        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0};
+            const val = getTierValue(p.rank);
+            entry.totalValue += val;
+            if (val > entry.bestValue) entry.bestValue = val;
+            playerMap.set(p.name, entry);
+        }));
+        let list = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || b.bestValue - a.bestValue).slice(0,3);
+        let html = "";
+        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p></div>`;
+        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p></div>`;
+        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p></div>`;
+        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
 
     function renderOverall() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
-        const legendContainer = document.getElementById("points-legend");
-        legendContainer.classList.remove("hidden");
-        legendContainer.innerHTML = renderPointsLegend();
+        document.getElementById("points-legend").innerHTML = renderPointsLegend();
 
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
@@ -336,9 +340,7 @@
     function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
-        const legendContainer = document.getElementById("points-legend");
-        legendContainer.classList.remove("hidden");
-        legendContainer.innerHTML = renderPointsLegend();
+        document.getElementById("points-legend").innerHTML = renderPointsLegend();
 
         const isRetired = currentCategory === 5;
         let fullList = [...data[currentCategory]];
@@ -368,10 +370,18 @@
         tbody.innerHTML = html;
     }
 
-    // Hide legend in Hall of Fame
+    function renderPodium() {
+        const container = document.getElementById("podium");
+        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
+        let html = "";
+        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
+        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
+        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
+        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
+    }
+
     function renderHallOfFame() {
-        document.getElementById("points-legend").classList.add("hidden");
-        // ... rest of Hall of Fame code (unchanged)
+        document.getElementById("points-legend").innerHTML = "";
         const grid = document.getElementById("hof-grid");
         let list = [...data[6]];
         if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
@@ -440,19 +450,241 @@
         else { if (!isRetired) renderPodium(); renderTable(); }
     }
 
-    // ... (all other functions remain exactly the same as in the previous version - edit, save, etc.)
-
-    function renderPodium() {
-        const container = document.getElementById("podium");
-        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
-        let html = "";
-        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
-        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
-        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
-        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
+    function switchCategory(index) {
+        document.querySelectorAll('.tab-link').forEach(t => t.classList.remove('bg-zinc-900','text-blue-400'));
+        const tab = document.getElementById(`tab-${index}`);
+        if (tab) tab.classList.add('bg-zinc-900','text-blue-400');
+        currentCategory = index;
+        currentFilter = "";
+        document.getElementById("search-input").value = "";
+        document.getElementById("category-title").textContent = `${categories[index]} LEADERBOARD`;
+        renderAll();
     }
 
-    // (The rest of the script - showAddModal, savePlayer, edit functions, showPlayerDetail, etc. - is identical to the previous working version)
+    function toggleGamemodes() {
+        document.getElementById("gamemodes-dropdown").classList.toggle("active");
+    }
+
+    function showAddModal(editId = null, isOverallEdit = false) {
+        const modal = document.getElementById("modal");
+        const titleEl = document.getElementById("modal-title");
+        const isHoF = currentCategory === 6;
+        const isRetired = currentCategory === 5;
+
+        if (currentCategory === 0 && !editId) isOverallEdit = true;
+
+        document.getElementById("edit-index").value = editId || "";
+        document.getElementById("edit-mode").value = isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode");
+
+        titleEl.textContent = editId ? "Edit Player" : "Add Player";
+
+        let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
+
+        if (isHoF) {
+            contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2021"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2024"></div></div><div class="space-y-4" id="prime-tiers-container"></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="4" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
+        } else {
+            contentHTML += `<div class="space-y-4" id="tiers-container"></div>`;
+        }
+
+        document.getElementById("modal-content").innerHTML = contentHTML;
+
+        if (!isHoF) {
+            const container = document.getElementById("tiers-container");
+            let html = '';
+            const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
+            cats.forEach(cat => {
+                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set / Untiered</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        if (editId) {
+            let player;
+            if (isOverallEdit) {
+                for (let cat = 1; cat <= 4; cat++) {
+                    player = data[cat].find(p => p.id === editId);
+                    if (player) break;
+                }
+            } else {
+                player = data[currentCategory].find(p => p.id === editId);
+            }
+            if (player) {
+                document.getElementById("player-name").value = player.name;
+                const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
+                cats.forEach(cat => {
+                    const select = document.getElementById(`tier-${cat}`);
+                    if (select) {
+                        let currentTier = "";
+                        if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
+                        else if (isOverallEdit) {
+                            const p = data[cat].find(x => x.id === editId);
+                            if (p) currentTier = p.rank;
+                        } else if (player.rank) currentTier = player.rank;
+                        select.value = currentTier;
+                    }
+                });
+            }
+        }
+
+        modal.classList.remove("hidden");
+    }
+
+    function hideModal() { document.getElementById("modal").classList.add("hidden"); }
+
+    function savePlayer() {
+        const name = document.getElementById("player-name").value.trim();
+        if (!name) return alert("Username is required!");
+
+        const editId = document.getElementById("edit-index").value;
+        const editMode = document.getElementById("edit-mode").value;
+
+        if (editMode === "overall") {
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`tier-${cat}`);
+                const desiredTier = select ? select.value : "";
+                const idx = data[cat].findIndex(p => p.id == editId);
+                if (desiredTier && desiredTier !== "") {
+                    if (idx !== -1) data[cat][idx].rank = desiredTier;
+                    else data[cat].push({name, rank: desiredTier, id: Date.now()});
+                } else if (idx !== -1) data[cat].splice(idx, 1);
+            });
+        } else if (editMode === "retired") {
+            const retiredTiers = {};
+            [1,2,3,4].forEach(cat => {
+                const select = document.getElementById(`tier-${cat}`);
+                if (select && select.value && select.value !== "") retiredTiers[cat] = select.value;
+            });
+            if (editId) {
+                const player = data[5].find(p => p.id == editId);
+                if (player) player.retiredTiers = retiredTiers;
+            } else {
+                data[5].push({name, retiredTiers, id: Date.now()});
+            }
+        } else {
+            const tier = document.getElementById("tier-" + currentCategory).value;
+            if (editId) {
+                const player = data[currentCategory].find(p => p.id == editId);
+                if (player) {
+                    if (tier && tier !== "") player.rank = tier;
+                    else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
+                }
+            } else if (tier && tier !== "") {
+                data[currentCategory].push({name, rank: tier, id: Date.now()});
+            }
+        }
+
+        saveToStorage();
+        hideModal();
+        renderAll();
+    }
+
+    function editPlayer(id) { showAddModal(id, false); }
+    function editPlayerFromOverall(name) { 
+        let id = null;
+        for (let cat = 1; cat <= 4; cat++) {
+            const player = data[cat].find(p => p.name === name);
+            if (player) { id = player.id; break; }
+        }
+        showAddModal(id, true);
+    }
+
+    function deletePlayer(id) {
+        if (confirm("Delete this entry permanently?")) {
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.id !== id);
+            else data[currentCategory] = data[currentCategory].filter(p => p.id !== id);
+            saveToStorage();
+            renderAll();
+        }
+    }
+
+    function deletePlayerByName(name) {
+        if (confirm("Delete this entry permanently?")) {
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.name !== name);
+            else data[currentCategory] = data[currentCategory].filter(p => p.name !== name);
+            saveToStorage();
+            renderAll();
+        }
+    }
+
+    function moveUp(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i <= 0) return;
+        [list[i], list[i-1]] = [list[i-1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function moveDown(id) {
+        const list = data[currentCategory];
+        const i = list.findIndex(p => p.id === id);
+        if (i >= list.length-1) return;
+        [list[i], list[i+1]] = [list[i+1], list[i]];
+        saveToStorage();
+        renderAll();
+    }
+
+    function filterTable() {
+        currentFilter = document.getElementById("search-input").value;
+        renderAll();
+    }
+
+    function resetData() {
+        if (confirm("Reset ALL data and start fresh?")) {
+            localStorage.removeItem("mvp_leaderboards");
+            location.reload();
+        }
+    }
+
+    function showPlayerDetail(name) {
+        let playerData = {};
+        let totalPoints = 0;
+        let bestTier = "Low Tier 5";
+        [1,2,3,4].forEach(cat => {
+            const p = data[cat].find(pl => pl.name === name);
+            if (p) {
+                playerData[cat] = p.rank;
+                const val = getTierValue(p.rank);
+                totalPoints += val;
+                if (val > getTierValue(bestTier)) bestTier = p.rank;
+            }
+        });
+        const retiredPlayer = data[5].find(pl => pl.name === name);
+        if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
+        const playerMap = new Map();
+        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0};
+            entry.totalValue += getTierValue(p.rank);
+            playerMap.set(p.name, entry);
+        }));
+        const ranked = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue);
+        const overallRank = ranked.findIndex(p => p.name === name) + 1;
+        document.getElementById("detail-name").textContent = name;
+        document.getElementById("detail-head").src = `https://mc-heads.net/avatar/${name}/128`;
+        const badgeEl = document.getElementById("detail-badge");
+        badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${bestTier} Legend`;
+        document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
+        let tiersHTML = '';
+        [1,2,3,4].forEach(cat => {
+            const tier = playerData[cat] || (playerData.retiredTiers && playerData.retiredTiers[cat]) || '-';
+            const isRetired = playerData.retiredTiers && playerData.retiredTiers[cat];
+            const gradient = getTierGradient(tier);
+            tiersHTML += `<div class="text-center"><div class="text-2xl mb-1">${gamemodeIcons[cat]}</div><div class="text-xs text-zinc-400">${gamemodeNames[cat]}</div><span class="tier-badge mx-auto block mt-1" style="background-image: ${gradient}">${tier}${isRetired ? ' (Retired)' : ''}</span></div>`;
+        });
+        document.getElementById("detail-tiers").innerHTML = tiersHTML;
+        document.getElementById("detail-namemc").href = `https://namemc.com/profile/${name}`;
+        const modal = document.getElementById("player-detail-modal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+    }
+
+    function hidePlayerDetail() {
+        const modal = document.getElementById("player-detail-modal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+    }
 
     window.onload = async function() {
         await loadData();
