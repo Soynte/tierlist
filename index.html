@@ -240,8 +240,6 @@
             if (isRetired) {
                 tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : "-";
                 suffix = tier !== "-" ? " (Retired)" : "";
-            } else if (player.tiers && player.tiers[cat]) {
-                tier = player.tiers[cat];
             } else if (player.rank) {
                 tier = player.rank;
             }
@@ -427,7 +425,7 @@
         const isHoF = currentCategory === 6;
         const isRetired = currentCategory === 5;
 
-        // Force overall mode when adding from Overall tab
+        // When adding from Overall tab, force all 4 fields
         if (currentCategory === 0 && !editId) isOverallEdit = true;
 
         document.getElementById("edit-index").value = editId || "";
@@ -455,6 +453,7 @@
             container.innerHTML = html;
         }
 
+        // Pre-fill existing data
         if (editId) {
             let player;
             if (isOverallEdit) {
@@ -471,9 +470,13 @@
                 cats.forEach(cat => {
                     const select = document.getElementById(`tier-${cat}`);
                     if (select) {
-                        if (isRetired && player.retiredTiers && player.retiredTiers[cat]) select.value = player.retiredTiers[cat];
-                        else if (isOverallEdit && player.tiers && player.tiers[cat]) select.value = player.tiers[cat];
-                        else if (!isOverallEdit && !isRetired && player.rank) select.value = player.rank;
+                        let currentTier = "";
+                        if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
+                        else if (isOverallEdit) {
+                            const p = data[cat].find(x => x.id === editId);
+                            if (p) currentTier = p.rank;
+                        } else if (player.rank) currentTier = player.rank;
+                        select.value = currentTier;
                     }
                 });
             }
@@ -497,7 +500,7 @@
                 const desiredTier = select ? select.value : "";
 
                 const idx = data[cat].findIndex(p => p.id == editId);
-                if (desiredTier) {
+                if (desiredTier && desiredTier !== "") {
                     if (idx !== -1) {
                         data[cat][idx].rank = desiredTier;
                     } else {
@@ -511,7 +514,7 @@
             const retiredTiers = {};
             [1,2,3,4].forEach(cat => {
                 const select = document.getElementById(`tier-${cat}`);
-                if (select && select.value) retiredTiers[cat] = select.value;
+                if (select && select.value && select.value !== "") retiredTiers[cat] = select.value;
             });
             if (editId) {
                 const player = data[5].find(p => p.id == editId);
@@ -524,10 +527,10 @@
             if (editId) {
                 const player = data[currentCategory].find(p => p.id == editId);
                 if (player) {
-                    if (tier) player.rank = tier;
+                    if (tier && tier !== "") player.rank = tier;
                     else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
                 }
-            } else if (tier) {
+            } else if (tier && tier !== "") {
                 data[currentCategory].push({name, rank: tier, id: Date.now()});
             }
         }
