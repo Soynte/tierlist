@@ -85,7 +85,7 @@
             <h2 id="category-title" class="text-2xl font-semibold header-font tracking-widest">OVERALL LEADERBOARD</h2>
             <div class="flex items-center gap-6">
                 <div id="tierpoints-dropdown" class="tierpoints-dropdown relative">
-                    <button onclick="toggleTierpointsDropdown()" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Tierpoints <i id="tier-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
+                    <button onclick="toggleTierpointsDropdown(event)" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Tierpoints <i id="tier-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
                     <div id="tierpoints-content" class="tierpoints-dropdown-content absolute top-full right-0 mt-2 bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 py-3 px-4 w-64 z-50"></div>
                 </div>
                 <div class="flex items-center gap-x-4 text-sm">
@@ -202,17 +202,31 @@
     function renderTierpointsContent() {
         const tiers = [{name:"High Tier 1",pts:100},{name:"Low Tier 1",pts:90},{name:"High Tier 2",pts:80},{name:"Low Tier 2",pts:70},{name:"High Tier 3",pts:60},{name:"Low Tier 3",pts:50},{name:"High Tier 4",pts:40},{name:"Low Tier 4",pts:30},{name:"High Tier 5",pts:20},{name:"Low Tier 5",pts:10}];
         let html = '';
-        tiers.forEach(t => html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="tier-badge" style="background-image: ${getTierGradient(t.name)}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} pts</span></div>`);
+        tiers.forEach(t => {
+            html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="tier-badge" style="background-image: ${getTierGradient(t.name)}">${t.name}</span><span class="font-medium text-amber-300">${t.pts} pts</span></div>`;
+        });
         return html;
     }
 
-    function toggleTierpointsDropdown() {
+    function toggleTierpointsDropdown(e) {
+        e.stopImmediatePropagation();
         const dd = document.getElementById("tierpoints-dropdown");
-        dd.classList.toggle("active");
-        document.getElementById("tier-chevron").style.transform = dd.classList.contains("active") ? "rotate(180deg)" : "";
+        const content = document.getElementById("tierpoints-content");
+        const chevron = document.getElementById("tier-chevron");
+        const isActive = dd.classList.toggle("active");
+        chevron.style.transform = isActive ? "rotate(180deg)" : "";
     }
 
-    function renderOverallPodium() {
+    // Close dropdown when clicking anywhere else
+    document.addEventListener('click', function(e) {
+        const dd = document.getElementById("tierpoints-dropdown");
+        if (dd && !dd.contains(e.target)) {
+            dd.classList.remove("active");
+            document.getElementById("tier-chevron").style.transform = "";
+        }
+    });
+
+    function renderOverallPodium() { /* same as before */ 
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -235,6 +249,7 @@
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
 
+        /* rest of renderOverall unchanged from last version */
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
             let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{}};
