@@ -304,6 +304,16 @@
         tbody.innerHTML = html;
     }
 
+    function renderPodium() {
+        const container = document.getElementById("podium");
+        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
+        let html = "";
+        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
+        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
+        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
+        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
+    }
+
     function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
@@ -425,7 +435,6 @@
         const isHoF = currentCategory === 6;
         const isRetired = currentCategory === 5;
 
-        // When adding from Overall tab, force all 4 fields
         if (currentCategory === 0 && !editId) isOverallEdit = true;
 
         document.getElementById("edit-index").value = editId || "";
@@ -453,7 +462,6 @@
             container.innerHTML = html;
         }
 
-        // Pre-fill existing data
         if (editId) {
             let player;
             if (isOverallEdit) {
