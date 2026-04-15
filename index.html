@@ -10,31 +10,55 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Press+Start+2P&display=swap');
+        html { scroll-behavior: smooth; }
         body { font-family: 'Inter', system_ui, sans-serif; }
         .header-font { font-family: 'Press Start 2P', sans-serif; }
-        .tier-badge { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #52525b; color: transparent; background-clip: text; -webkit-background-clip: text; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; }
-        .modal { animation: modalPop 0.3s ease-out; }
-        @keyframes modalPop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .player-head { border: 3px solid #18181b; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
-        .hof-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); background: linear-gradient(145deg, #18181b, #111113); border: 2px solid #3b82f6; box-shadow: 0 0 40px -10px rgb(59 130 246); }
+
+        .tier-badge { 
+            font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 9999px; 
+            display: inline-flex; align-items: center; justify-content: center; background: #52525b; 
+            color: transparent; background-clip: text; -webkit-background-clip: text; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; 
+            transition: all 0.2s ease;
+        }
+
+        .modal { animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes modalPop { 
+            0% { transform: scale(0.95); opacity: 0; } 
+            100% { transform: scale(1); opacity: 1; } 
+        }
+
+        .player-head { border: 3px solid #18181b; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); transition: transform 0.2s ease; }
+        .player-head:hover { transform: scale(1.1); }
+
+        .hof-card { 
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: linear-gradient(145deg, #18181b, #111113); 
+            border: 2px solid #3b82f6; 
+            box-shadow: 0 0 40px -10px rgb(59 130 246); 
+        }
         .hof-card:hover { transform: translateY(-8px) scale(1.03); box-shadow: 0 35px 70px -15px rgb(59 130 246); border-color: #eab308; }
-        .skin-display { background: #0a0a0a; border: 6px solid #18181b; border-radius: 24px; box-shadow: 0 0 60px -20px rgb(234 179 8), inset 0 0 40px rgba(255,255,255,0.08); overflow: hidden; padding: 20px; }
-        .skin-render { width: 100%; max-width: 340px; height: 380px; object-fit: contain; filter: drop-shadow(0 20px 30px rgba(59, 130, 246, 0.5)); }
-        .hof-header { background: linear-gradient(to right, #111113, #1f2937); border-bottom: 3px solid #eab308; }
-        .dropdown-content { display: none; }
-        .dropdown.active .dropdown-content { display: block; }
-        .chevron { transition: transform 0.3s ease; }
-        .dropdown.active .chevron { transform: rotate(180deg); }
-        .tierpoints-dropdown { position: relative; }
-        .tierpoints-dropdown-content { display: none; position: absolute; top: 100%; right: 0; background: #27272a; border: 2px solid #3b82f6; border-radius: 16px; padding: 12px; width: 260px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 50; font-size: 13px; }
-        .tierpoints-dropdown.active .tierpoints-dropdown-content { display: block; }
-        .tierpoints-item { display: flex; justify-content: space-between; padding: 6px 10px; border-radius: 8px; margin-bottom: 4px; }
-        .tierpoints-item:hover { background: #3b82f6; color: white; }
-        @media (max-width: 640px) { .tier-badge { font-size: 10px; padding: 2px 6px; } .tierpoints-dropdown-content { width: 240px; } }
-        #podium-container, #normal-leaderboard, #hall-of-fame { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .leaderboard-table tr { transition: all 0.2s ease; }
+        .leaderboard-table tr:hover { background-color: #27272a; transform: translateX(4px); }
+
+        #podium-container, #normal-leaderboard, #hall-of-fame {
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
         .fade-in { animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
-        .player-detail-modal-content { background: linear-gradient(145deg, #1f2937, #111827); box-shadow: 0 0 80px -20px rgb(234 179 8); }
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .player-detail-modal-content { 
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            background: linear-gradient(145deg, #1f2937, #111827); 
+            box-shadow: 0 0 80px -20px rgb(234 179 8); 
+        }
+
+        button { transition: all 0.2s ease; }
+        button:hover { transform: translateY(-1px); }
     </style>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen">
@@ -472,7 +496,6 @@
             });
             container.innerHTML = html;
         } else {
-            // Populate prime tier selects for Hall of Fame
             const container = document.getElementById("prime-tiers-container");
             let html = '';
             [1,2,3,4].forEach(cat => {
@@ -602,6 +625,7 @@
     }
 
     function editPlayer(id) { showAddModal(id, false); }
+
     function editPlayerFromOverall(name) {
         let id = null;
         for (let cat = 1; cat <= 4; cat++) {
