@@ -283,9 +283,9 @@
         [1,2,3,4].forEach(cat => {
             let tier = "-";
             let suffix = "";
-            if (isRetired) {
-                tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : "-";
-                suffix = tier !== "-" ? " (Retired)" : "";
+            if (isRetired || (player.retiredTiers && player.retiredTiers[cat])) {
+                tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : (player.rank || "-");
+                suffix = " (R)";
             } else if (player.tiers && player.tiers[cat]) {
                 tier = player.tiers[cat];
             } else if (player.rank) {
@@ -350,14 +350,24 @@
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
 
         const playerMap = new Map();
+
+        // Active tiers (count points)
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
-            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}};
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, retiredTiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
             entry.tiers[cat] = p.rank;
             playerMap.set(p.name, entry);
         }));
+
+        // Retired tiers (display only - NO points added)
+        data[5].forEach(p => {
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, retiredTiers: {}};
+            entry.retiredTiers = p.retiredTiers || {};
+            playerMap.set(p.name, entry);
+        });
+
         let fullList = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || b.bestValue - a.bestValue);
         let displayedList = currentFilter ? fullList.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase())) : fullList;
         if (displayedList.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
@@ -717,7 +727,7 @@
             const tier = playerData[cat] || (playerData.retiredTiers && playerData.retiredTiers[cat]) || '-';
             const isRetired = playerData.retiredTiers && playerData.retiredTiers[cat];
             const gradient = getTierGradient(tier);
-            tiersHTML += `<div class="text-center"><img src="${gamemodeIcons[cat]}" class="w-8 h-8 mx-auto mb-1"><div class="text-xs text-zinc-400">${gamemodeNames[cat]}</div><span class="tier-badge mx-auto block mt-1" style="background-image: ${gradient}">${tier}${isRetired ? ' (Retired)' : ''}</span></div>`;
+            tiersHTML += `<div class="text-center"><img src="${gamemodeIcons[cat]}" class="w-8 h-8 mx-auto mb-1"><div class="text-xs text-zinc-400">${gamemodeNames[cat]}</div><span class="tier-badge mx-auto block mt-1" style="background-image: ${gradient}">${tier}${isRetired ? ' (R)' : ''}</span></div>`;
         });
         document.getElementById("detail-tiers").innerHTML = tiersHTML;
         document.getElementById("detail-namemc").href = `https://namemc.com/profile/${name}`;
