@@ -138,7 +138,7 @@
 <!-- Modals -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
-        <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add Player</h3>
+        <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add / Edit Player</h3>
         <div id="modal-content" class="space-y-6"></div>
         <div class="flex gap-x-3 mt-10">
             <button onclick="hideModal()" class="flex-1 py-4 text-zinc-400 hover:bg-zinc-800 rounded-2xl font-medium">Cancel</button>
@@ -470,11 +470,11 @@
             let player;
             if (isOverallEdit) {
                 for (let cat = 1; cat <= 4; cat++) {
-                    player = data[cat].find(p => p.id === editId);
+                    player = (data[cat] || []).find(p => p.id === editId);
                     if (player) break;
                 }
             } else {
-                player = data[currentCategory].find(p => p.id === editId);
+                player = (data[currentCategory] || []).find(p => p.id === editId);
             }
             if (player) {
                 document.getElementById("player-name").value = player.name;
@@ -485,7 +485,7 @@
                         let currentTier = "";
                         if (isRetired && player.retiredTiers && player.retiredTiers[cat]) currentTier = player.retiredTiers[cat];
                         else if (isOverallEdit) {
-                            const p = data[cat].find(x => x.id === editId);
+                            const p = (data[cat] || []).find(x => x.id === editId);
                             if (p) currentTier = p.rank;
                         } else if (player.rank) currentTier = player.rank;
                         select.value = currentTier;
@@ -508,9 +508,9 @@
 
         if (editMode === "overall") {
             [1,2,3,4].forEach(cat => {
+                data[cat] = data[cat] || [];
                 const select = document.getElementById(`tier-${cat}`);
                 const desiredTier = select ? select.value : "";
-                data[cat] = data[cat] || [];
                 const idx = data[cat].findIndex(p => p.id == editId);
                 if (desiredTier && desiredTier !== "") {
                     if (idx !== -1) data[cat][idx].rank = desiredTier;
@@ -550,13 +550,21 @@
     }
 
     function editPlayer(id) { showAddModal(id, false); }
-    function editPlayerFromOverall(name) { 
+
+    function editPlayerFromOverall(name) {
         let id = null;
         for (let cat = 1; cat <= 4; cat++) {
-            const player = data[cat].find(p => p.name === name);
-            if (player) { id = player.id; break; }
+            const player = (data[cat] || []).find(p => p.name === name);
+            if (player) {
+                id = player.id;
+                break;
+            }
         }
-        showAddModal(id, true);
+        if (id) {
+            showAddModal(id, true);
+        } else {
+            alert("Could not find player for editing. Please try again.");
+        }
     }
 
     function deletePlayer(id) {
