@@ -427,6 +427,9 @@
         const isHoF = currentCategory === 6;
         const isRetired = currentCategory === 5;
 
+        // Force overall mode when adding from Overall tab
+        if (currentCategory === 0 && !editId) isOverallEdit = true;
+
         document.getElementById("edit-index").value = editId || "";
         document.getElementById("edit-mode").value = isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode");
 
