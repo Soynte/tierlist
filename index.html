@@ -240,6 +240,8 @@
             if (isRetired) {
                 tier = player.retiredTiers && player.retiredTiers[cat] ? player.retiredTiers[cat] : "-";
                 suffix = tier !== "-" ? " (Retired)" : "";
+            } else if (player.tiers && player.tiers[cat]) {
+                tier = player.tiers[cat];          // ← Fixed: always check .tiers first for Overall
             } else if (player.rank) {
                 tier = player.rank;
             }
