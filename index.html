@@ -256,7 +256,7 @@
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
-            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, id: p.id};
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
@@ -276,7 +276,7 @@
         const empty = document.getElementById("empty-state");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => data[cat].forEach(p => {
-            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}, id: p.id};
+            let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0, bestValue: 0, tiers: {}};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
@@ -306,6 +306,16 @@
         tbody.innerHTML = html;
     }
 
+    function renderPodium() {
+        const container = document.getElementById("podium");
+        let list = [...data[currentCategory]].sort((a,b) => getTierValue(b.rank) - getTierValue(a.rank)).slice(0,3);
+        let html = "";
+        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
+        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
+        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
+        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
+    }
+
     function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
@@ -320,7 +330,12 @@
         displayedList.forEach(player => {
             const trueRank = fullList.findIndex(p => p.id === player.id) + 1;
             const points = isRetired ? getRetiredTotalValue(player) : getTierValue(player.rank);
-            const tiersHTML = isRetired ? renderCompactTiers(player, true) : `<span class="tier-badge" style="background-image: ${getTierGradient(player.rank)}">${player.rank}</span>`;
+            let tiersHTML;
+            if (isRetired) {
+                tiersHTML = renderCompactTiers(player, true);
+            } else {
+                tiersHTML = `<span class="tier-badge" style="background-image: ${getTierGradient(player.rank)}">${player.rank}</span>`;
+            }
             html += `<tr class="transition-colors">
                 <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
                 <td onclick="showPlayerDetail('${player.name}'); event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
@@ -335,6 +350,50 @@
             </tr>`;
         });
         tbody.innerHTML = html;
+    }
+
+    function renderHallOfFame() {
+        const grid = document.getElementById("hof-grid");
+        let list = [...data[6]];
+        if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
+        let html = "";
+        list.forEach(player => {
+            let primeHTML = "";
+            if (player.primeTiers) {
+                const active = [];
+                [1,2,3,4].forEach(cat => {
+                    const tier = player.primeTiers[cat];
+                    if (tier && tier !== "-") active.push(`<div class="flex flex-col items-center flex-1"><div class="text-3xl mb-1">${gamemodeIcons[cat]}</div><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}</span></div>`);
+                });
+                if (active.length) primeHTML = `<div class="mt-4"><div class="text-xs text-amber-300 mb-2">PRIME IN</div><div class="flex justify-between">${active.join('')}</div></div>`;
+            }
+            const primeYears = (player.primeFrom && player.primeTo) ? `<div class="text-xs text-amber-300 mt-1">Prime: ${player.primeFrom} – ${player.primeTo}</div>` : '';
+            html += `<div class="hof-card rounded-3xl overflow-hidden">
+                <div class="px-8 pt-8 pb-4 text-center">
+                    <p class="text-3xl font-bold">${player.name}</p>
+                    ${primeYears}
+                    ${primeHTML}
+                </div>
+                <div class="flex justify-center py-8 px-8">
+                    <div class="skin-display"><img src="https://visage.surgeplay.com/full/1024/${player.name}" class="skin-render"></div>
+                </div>
+                <div class="px-8 pb-8 text-center">
+                    <p class="text-zinc-300 leading-relaxed text-lg italic">"${player.description || '—'}"</p>
+                    ${player.quote ? `<p class="mt-6 text-amber-300">"${player.quote}"</p>` : ''}
+                </div>
+                <div class="px-8 pb-8 flex justify-between items-center border-t border-zinc-800 pt-6">
+                    <div class="flex gap-x-3">
+                        <button onclick="moveUp(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-3xl px-3"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button onclick="moveDown(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-3xl px-3"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                    <div class="flex gap-x-5">
+                        <button onclick="editPlayer(${player.id}); event.stopImmediatePropagation()" class="text-blue-400 hover:text-white text-2xl"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deletePlayer(${player.id}); event.stopImmediatePropagation()" class="text-red-400 hover:text-red-300 text-2xl"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>`;
+        });
+        grid.innerHTML = html;
     }
 
     function renderAll() {
@@ -377,7 +436,7 @@
         document.getElementById("gamemodes-dropdown").classList.toggle("active");
     }
 
-    function showAddModal(editId = null, isOverallEdit = false, editName = null) {
+    function showAddModal(editId = null, isOverallEdit = false) {
         const modal = document.getElementById("modal");
         const titleEl = document.getElementById("modal-title");
         const isHoF = currentCategory === 6;
@@ -386,7 +445,7 @@
         document.getElementById("edit-index").value = editId || "";
         document.getElementById("edit-mode").value = isOverallEdit ? "overall" : (isRetired ? "retired" : "gamemode");
 
-        titleEl.textContent = (editId || editName) ? "Edit Player" : "Add Player";
+        titleEl.textContent = editId ? "Edit Player" : "Add Player";
 
         let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
 
@@ -403,20 +462,20 @@
             let html = '';
             const cats = isOverallEdit || isRetired ? [1,2,3,4] : [currentCategory];
             cats.forEach(cat => {
-                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
+                html += `<div class="flex items-center gap-x-4"><span class="w-28 font-medium">${gamemodeNames[cat]}</span><select id="tier-${cat}" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-3 outline-none text-lg"><option value="">Not set / Untiered</option>` + ["High Tier 5","Low Tier 5","High Tier 4","Low Tier 4","High Tier 3","Low Tier 3","High Tier 2","Low Tier 2","High Tier 1","Low Tier 1"].map(t => `<option value="${t}">${t}</option>`).join('') + `</select></div>`;
             });
             container.innerHTML = html;
         }
 
-        if (editId || editName) {
+        if (editId) {
             let player;
             if (isOverallEdit) {
                 for (let cat = 1; cat <= 4; cat++) {
-                    player = data[cat].find(p => (editId && p.id === editId) || (editName && p.name === editName));
+                    player = data[cat].find(p => p.id === editId);
                     if (player) break;
                 }
             } else {
-                player = data[currentCategory].find(p => (editId && p.id === editId) || (editName && p.name === editName));
+                player = data[currentCategory].find(p => p.id === editId);
             }
             if (player) {
                 document.getElementById("player-name").value = player.name;
@@ -451,8 +510,14 @@
                 if (select && select.value) tiersObj[cat] = select.value;
             });
             [1,2,3,4].forEach(cat => {
-                const player = data[cat].find(p => p.id == editId || p.name === name);
-                if (player && tiersObj[cat]) player.rank = tiersObj[cat];
+                const idx = data[cat].findIndex(p => p.id == editId);
+                if (idx !== -1) {
+                    if (tiersObj[cat]) {
+                        data[cat][idx].rank = tiersObj[cat];
+                    } else {
+                        data[cat].splice(idx, 1);
+                    }
+                }
             });
         } else if (editMode === "retired") {
             const retiredTiers = {};
@@ -461,7 +526,7 @@
                 if (select && select.value) retiredTiers[cat] = select.value;
             });
             if (editId) {
-                const player = data[5].find(p => p.id == editId || p.name === name);
+                const player = data[5].find(p => p.id == editId);
                 if (player) player.retiredTiers = retiredTiers;
             } else {
                 data[5].push({name, retiredTiers, id: Date.now()});
@@ -469,9 +534,12 @@
         } else {
             const tier = document.getElementById("tier-" + currentCategory).value;
             if (editId) {
-                const player = data[currentCategory].find(p => p.id == editId || p.name === name);
-                if (player) player.rank = tier;
-            } else {
+                const player = data[currentCategory].find(p => p.id == editId);
+                if (player) {
+                    if (tier) player.rank = tier;
+                    else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
+                }
+            } else if (tier) {
                 data[currentCategory].push({name, rank: tier, id: Date.now()});
             }
         }
@@ -482,7 +550,14 @@
     }
 
     function editPlayer(id) { showAddModal(id, false); }
-    function editPlayerFromOverall(name) { showAddModal(null, true, name); }
+    function editPlayerFromOverall(name) { 
+        let id = null;
+        for (let cat = 1; cat <= 4; cat++) {
+            const player = data[cat].find(p => p.name === name);
+            if (player) { id = player.id; break; }
+        }
+        showAddModal(id, true);
+    }
 
     function deletePlayer(id) {
         if (confirm("Delete this entry permanently?")) {
@@ -496,7 +571,8 @@
 
     function deletePlayerByName(name) {
         if (confirm("Delete this entry permanently?")) {
-            if (currentCategory === 6) data[6] = data[6].filter(p => p.name !== name);
+            const isHoF = currentCategory === 6;
+            if (isHoF) data[6] = data[6].filter(p => p.name !== name);
             else data[currentCategory] = data[currentCategory].filter(p => p.name !== name);
             saveToStorage();
             renderAll();
