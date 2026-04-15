@@ -216,16 +216,16 @@
     }
 
     function getTierValue(tier) { return tierValueMap[tier] || 0; }
-    function getRetiredTotalValue(p) { return p.retiredTiers ? Object.values(p.retiredTiers).reduce((s,t)=>s+getTierValue(t),0) : 0; }
+    function getRetiredTotalValue(p) { return p && p.retiredTiers ? Object.values(p.retiredTiers).reduce((s,t)=>s+getTierValue(t),0) : 0; }
 
     function renderCompactTiers(player) {
         let html = '<div class="flex justify-between items-center w-full px-1 sm:px-2 gap-1">';
         [1,2,3,4].forEach(cat => {
             let tier = "-";
             let suffix = "";
-            if (player.retiredTiers && player.retiredTiers[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
-            else if (player.tiers && player.tiers[cat]) tier = player.tiers[cat];
-            else if (player.rank) tier = player.rank;
+            if (player && player.retiredTiers && player.retiredTiers[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
+            else if (player && player.tiers && player.tiers[cat]) tier = player.tiers[cat];
+            else if (player && player.rank) tier = player.rank;
             const gradient = getTierGradient(tier);
             html += `<div class="flex flex-col items-center flex-1 min-w-0"><img src="${gamemodeIcons[cat]}" class="w-7 h-7 mb-1"><span class="tier-badge w-full text-center" style="background-image: ${gradient}">${tier}${suffix}</span></div>`;
         });
@@ -510,6 +510,7 @@
             [1,2,3,4].forEach(cat => {
                 const select = document.getElementById(`tier-${cat}`);
                 const desiredTier = select ? select.value : "";
+                data[cat] = data[cat] || [];
                 const idx = data[cat].findIndex(p => p.id == editId);
                 if (desiredTier && desiredTier !== "") {
                     if (idx !== -1) data[cat][idx].rank = desiredTier;
@@ -522,6 +523,7 @@
                 const select = document.getElementById(`tier-${cat}`);
                 if (select && select.value && select.value !== "") retiredTiers[cat] = select.value;
             });
+            data[5] = data[5] || [];
             if (editId) {
                 const player = data[5].find(p => p.id == editId);
                 if (player) player.retiredTiers = retiredTiers;
@@ -530,6 +532,7 @@
             }
         } else {
             const tier = document.getElementById("tier-" + currentCategory).value;
+            data[currentCategory] = data[currentCategory] || [];
             if (editId) {
                 const player = data[currentCategory].find(p => p.id == editId);
                 if (player) {
@@ -559,8 +562,8 @@
     function deletePlayer(id) {
         if (confirm("Delete this entry permanently?")) {
             const isHoF = currentCategory === 6;
-            if (isHoF) data[6] = data[6].filter(p => p.id !== id);
-            else data[currentCategory] = data[currentCategory].filter(p => p.id !== id);
+            if (isHoF) data[6] = (data[6] || []).filter(p => p.id !== id);
+            else data[currentCategory] = (data[currentCategory] || []).filter(p => p.id !== id);
             saveToStorage();
             renderAll();
         }
@@ -569,15 +572,15 @@
     function deletePlayerByName(name) {
         if (confirm("Delete this entry permanently?")) {
             const isHoF = currentCategory === 6;
-            if (isHoF) data[6] = data[6].filter(p => p.name !== name);
-            else data[currentCategory] = data[currentCategory].filter(p => p.name !== name);
+            if (isHoF) data[6] = (data[6] || []).filter(p => p.name !== name);
+            else data[currentCategory] = (data[currentCategory] || []).filter(p => p.name !== name);
             saveToStorage();
             renderAll();
         }
     }
 
     function moveUp(id) {
-        const list = data[currentCategory];
+        const list = data[currentCategory] || [];
         const i = list.findIndex(p => p.id === id);
         if (i <= 0) return;
         [list[i], list[i-1]] = [list[i-1], list[i]];
@@ -586,7 +589,7 @@
     }
 
     function moveDown(id) {
-        const list = data[currentCategory];
+        const list = data[currentCategory] || [];
         const i = list.findIndex(p => p.id === id);
         if (i >= list.length-1) return;
         [list[i], list[i+1]] = [list[i+1], list[i]];
@@ -611,7 +614,7 @@
         let totalPoints = 0;
         let bestTier = "Low Tier 5";
         [1,2,3,4].forEach(cat => {
-            const p = data[cat].find(pl => pl.name === name);
+            const p = (data[cat] || []).find(pl => pl.name === name);
             if (p) {
                 playerData[cat] = p.rank;
                 const val = getTierValue(p.rank);
@@ -619,10 +622,10 @@
                 if (val > getTierValue(bestTier)) bestTier = p.rank;
             }
         });
-        const retiredPlayer = data[5].find(pl => pl.name === name);
+        const retiredPlayer = (data[5] || []).find(pl => pl.name === name);
         if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
         const playerMap = new Map();
-        [1,2,3,4].forEach(cat => data[cat].forEach(p => {
+        [1,2,3,4].forEach(cat => (data[cat] || []).forEach(p => {
             let entry = playerMap.get(p.name) || {name: p.name, totalValue: 0};
             entry.totalValue += getTierValue(p.rank);
             playerMap.set(p.name, entry);
