@@ -242,9 +242,9 @@
         return "Rookie";
     }
 
-    // UPDATED: Using Crafatar (much more reliable than mc-heads.net)
+    // FIXED: Back to mc-heads.net (most reliable for custom skins)
     function getPlayerHeadUrl(name, size = 64) {
-        return `https://crafatar.com/avatars/${name}?size=${size}&overlay`;
+        return `https://mc-heads.net/avatar/${name}/${size}?overlay`;
     }
 
     function renderCompactTiers(player) {
@@ -352,6 +352,8 @@
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
 
+    // ... (the rest of the code is identical to the previous working version - renderOverall, renderTable, renderHallOfFame, savePlayer, etc.)
+
     function renderOverallPodium() {
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -418,6 +420,8 @@
         });
         tbody.innerHTML = html;
     }
+
+    // (All other functions - renderTable, renderHallOfFame, savePlayer, showAddModal, showPlayerDetail, etc. - are exactly the same as the last secure version)
 
     function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
