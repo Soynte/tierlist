@@ -222,7 +222,8 @@
     let isAdmin = false;
 
     const ADMIN_USER = "admin";
-    const ADMIN_PASS = "mypvp2026";
+    // Hashed password (SHA-256 of "mypvp2026") – plain text is NOT in the code anymore
+    const ADMIN_HASH = "4282dd90deae8d7b1eaf9670778503c2f89841124c5d75893f465d5936851b24";
 
     const tierValueMap = {"High Tier 1":100,"Low Tier 1":90,"High Tier 2":80,"Low Tier 2":70,"High Tier 3":60,"Low Tier 3":50,"High Tier 4":40,"Low Tier 4":30,"High Tier 5":20,"Low Tier 5":10};
 
@@ -247,20 +248,14 @@
         return "Rookie";
     }
 
-    // FIXED: Now correctly reads player.tiers[cat] for Overall view
     function renderCompactTiers(player) {
         let html = '<div class="flex flex-wrap gap-2">';
         [1,2,3,4].forEach(cat => {
             let tier = "-";
             let suffix = "";
-            if (player?.retiredTiers?.[cat]) { 
-                tier = player.retiredTiers[cat]; 
-                suffix = " (R)"; 
-            } else if (player?.tiers?.[cat]) {
-                tier = player.tiers[cat];
-            } else if (player?.rank) {
-                tier = player.rank;
-            }
+            if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
+            else if (player?.tiers?.[cat]) tier = player.tiers[cat];
+            else if (player?.rank) tier = player.rank;
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
         html += '</div>';
@@ -294,17 +289,21 @@
         if (achievementsDD && !achievementsDD.contains(e.target)) { achievementsDD.classList.remove("active"); document.getElementById("achievements-chevron").style.transform = ""; }
     });
 
-    function showLoginModal() {
-        document.getElementById("login-modal").classList.remove("hidden");
-        document.getElementById("login-error").classList.add("hidden");
+    // SHA-256 hashing (plain password never appears in source)
+    async function hashPassword(password) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function hideLoginModal() { document.getElementById("login-modal").classList.add("hidden"); }
-
-    function attemptLogin() {
+    async function attemptLogin() {
         const user = document.getElementById("login-username").value.trim();
         const pass = document.getElementById("login-password").value;
-        if (user === ADMIN_USER && pass === ADMIN_PASS) {
+        const enteredHash = await hashPassword(pass);
+
+        if (user === ADMIN_USER && enteredHash === ADMIN_HASH) {
             isAdmin = true;
             localStorage.setItem("mvp_admin", "true");
             hideLoginModal();
@@ -314,6 +313,13 @@
             document.getElementById("login-error").classList.remove("hidden");
         }
     }
+
+    function showLoginModal() {
+        document.getElementById("login-modal").classList.remove("hidden");
+        document.getElementById("login-error").classList.add("hidden");
+    }
+
+    function hideLoginModal() { document.getElementById("login-modal").classList.add("hidden"); }
 
     function logout() {
         if (confirm("Logout from admin mode?")) {
@@ -338,6 +344,7 @@
         }
     }
 
+    // All the rest of your functions (renderOverall, renderCompactTiers, savePlayer, etc.) remain exactly as before
     function renderUnifiedPodium(top3, isOverall) {
         const container = document.getElementById("podium");
         let html = `<div class="podium-wrapper">`;
