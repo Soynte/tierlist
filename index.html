@@ -217,7 +217,6 @@
     let currentFilter = "";
     let isAdmin = false;
 
-    // Only this hash exists – nothing else reveals the password
     const ADMIN_SECRET = "4282dd90deae8d7b1eaf9670778503c2f89841124c5d75893f465d5936851b24";
 
     const tierValueMap = {"High Tier 1":100,"Low Tier 1":90,"High Tier 2":80,"Low Tier 2":70,"High Tier 3":60,"Low Tier 3":50,"High Tier 4":40,"Low Tier 4":30,"High Tier 5":20,"Low Tier 5":10};
@@ -241,6 +240,11 @@
         if (points >= 20) return "Combat Cadet";
         if (points >= 10) return "Combat Novice";
         return "Rookie";
+    }
+
+    // UPDATED: Using Crafatar (much more reliable than mc-heads.net)
+    function getPlayerHeadUrl(name, size = 64) {
+        return `https://crafatar.com/avatars/${name}?size=${size}&overlay`;
     }
 
     function renderCompactTiers(player) {
@@ -284,7 +288,6 @@
         if (achievementsDD && !achievementsDD.contains(e.target)) { achievementsDD.classList.remove("active"); document.getElementById("achievements-chevron").style.transform = ""; }
     });
 
-    // SHA-256 hash check (no username, no password visible anywhere)
     async function hashPassword(password) {
         const encoder = new TextEncoder();
         const data = encoder.encode(password);
@@ -342,9 +345,9 @@
     function renderUnifiedPodium(top3, isOverall) {
         const container = document.getElementById("podium");
         let html = `<div class="podium-wrapper">`;
-        if (top3.length >= 2) html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥈</div><img src="https://mc-heads.net/avatar/${top3[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[1].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p></div>`;
-        if (top3.length >= 1) html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6"><div class="text-5xl mb-3">🥇</div><img src="https://mc-heads.net/avatar/${top3[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="podium-name font-bold text-xl">${top3[0].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p></div>`;
-        if (top3.length >= 3) html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥉</div><img src="https://mc-heads.net/avatar/${top3[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[2].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p></div>`;
+        if (top3.length >= 2) html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥈</div><img src="${getPlayerHeadUrl(top3[1].name, 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[1].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p></div>`;
+        if (top3.length >= 1) html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6"><div class="text-5xl mb-3">🥇</div><img src="${getPlayerHeadUrl(top3[0].name, 64)}" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="podium-name font-bold text-xl">${top3[0].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p></div>`;
+        if (top3.length >= 3) html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥉</div><img src="${getPlayerHeadUrl(top3[2].name, 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[2].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p></div>`;
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
@@ -402,7 +405,7 @@
             html += `<tr class="transition-colors">
                 <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
                 <td onclick="showPlayerDetail('${player.name}');event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
-                    <div class="flex items-center gap-x-3"><img src="https://mc-heads.net/avatar/${player.name}/32" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
+                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player.name, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
                     <div class="text-xs mt-1 text-amber-300 font-medium">${title}</div>
                 </td>
                 <td class="px-4 py-5 tiers-cell">${renderCompactTiers(player)}</td>
@@ -437,7 +440,7 @@
             html += `<tr class="transition-colors">
                 <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
                 <td onclick="showPlayerDetail('${player.name}');event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
-                    <div class="flex items-center gap-x-3"><img src="https://mc-heads.net/avatar/${player.name}/32" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
+                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player.name, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
                 </td>
                 <td class="px-4 py-5 tiers-cell">${tiersHTML}</td>
                 <td class="px-6 py-5 font-mono text-amber-300 font-semibold text-right w-28">${points}</td>
@@ -774,7 +777,7 @@
         const achievement = getAchievementTitle(totalPoints);
 
         document.getElementById("detail-name").textContent = name;
-        document.getElementById("detail-head").src = `https://mc-heads.net/avatar/${name}/128`;
+        document.getElementById("detail-head").src = getPlayerHeadUrl(name, 128);
         const badgeEl = document.getElementById("detail-badge");
         badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${achievement}`;
         document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
