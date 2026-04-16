@@ -42,13 +42,18 @@
 
         .player-detail-modal-content { background: linear-gradient(145deg, #1f2937, #0f172a) !important; box-shadow: 0 0 80px -20px rgb(234 179 8); }
 
-        /* Improved Podium Styling */
-        .podium-wrapper { display: flex; justify-content: center; align-items: end; gap: 12px; }
-        .podium-step { text-align: center; transition: all 0.3s ease; }
-        .podium-2 { background: linear-gradient(#e2e8f0, #94a3b8); height: 140px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
-        .podium-1 { background: linear-gradient(#fcd34d, #f59e0b); height: 190px; width: 130px; border-radius: 12px 12px 0 0; box-shadow: 0 15px 25px -5px rgb(234 179 8); position: relative; }
-        .podium-1::before { content: "👑"; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); font-size: 32px; }
-        .podium-3 { background: linear-gradient(#d1d5db, #78716c); height: 110px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        /* Improved consistent podium */
+        .podium-wrapper { display: flex; justify-content: center; align-items: flex-end; gap: 12px; max-width: 100%; }
+        .podium-step { text-align: center; transition: all 0.3s ease; color: #000 !important; font-weight: 700; }
+        .podium-2 { background: linear-gradient(#e2e8f0, #94a3b8); height: 130px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12px; }
+        .podium-1 { background: linear-gradient(#fcd34d, #f59e0b); height: 180px; width: 130px; border-radius: 12px 12px 0 0; box-shadow: 0 15px 25px -5px rgb(234 179 8); display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 16px; position: relative; }
+        .podium-1::before { content: "👑"; position: absolute; top: -32px; left: 50%; transform: translateX(-50%); font-size: 34px; }
+        .podium-3 { background: linear-gradient(#d1d5db, #78716c); height: 100px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 12px; }
+        .podium-name { font-size: 15px; line-height: 1.1; max-width: 110px; word-break: break-word; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @media (max-width: 640px) {
+            .podium-name { font-size: 13px; }
+            .podium-1 { width: 110px; }
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen">
@@ -136,7 +141,7 @@
     </div>
 </main>
 
-<!-- Modals (unchanged) -->
+<!-- Modals -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
         <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add / Edit Player</h3>
@@ -220,6 +225,7 @@
             let tier = "-";
             let suffix = "";
             if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
+            else if (player?.tiers?.[cat]) tier = player.tiers[cat];
             else if (player?.rank) tier = player.rank;
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
@@ -283,54 +289,59 @@
         }
     });
 
-    function renderOverallPodium() {
+    function renderUnifiedPodium(top3, isOverall) {
         const container = document.getElementById("podium");
-        const playerMap = new Map();
-        [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
-            let entry = playerMap.get(p.name) || {name:p.name, totalValue:0, bestValue:0};
-            const val = getTierValue(p.rank);
-            entry.totalValue += val;
-            if (val > entry.bestValue) entry.bestValue = val;
-            playerMap.set(p.name, entry);
-        }));
-
-        let list = Array.from(playerMap.values()).sort((a,b) => {
-            if (b.totalValue !== a.totalValue) return b.totalValue - a.totalValue;
-            return a.name.localeCompare(b.name); // alphabetical tiebreaker
-        }).slice(0,3);
-
         let html = `<div class="podium-wrapper">`;
-        if (list.length >= 2) {
+        if (top3.length >= 2) {
             html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4">
                 <div class="text-4xl mb-2">🥈</div>
-                <img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
-                <p class="font-bold">${list[1].name}</p>
-                <p class="text-xs text-zinc-400">${list[1].totalValue} pts</p>
+                <img src="https://mc-heads.net/avatar/${top3[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
+                <p class="podium-name font-bold">${top3[1].name}</p>
+                <p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p>
             </div>`;
         }
-        if (list.length >= 1) {
+        if (top3.length >= 1) {
             html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6">
                 <div class="text-5xl mb-3">🥇</div>
-                <img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2">
-                <p class="font-bold text-xl">${list[0].name}</p>
-                <p class="text-xs text-zinc-400">${list[0].totalValue} pts</p>
+                <img src="https://mc-heads.net/avatar/${top3[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2">
+                <p class="podium-name font-bold text-xl">${top3[0].name}</p>
+                <p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p>
             </div>`;
         }
-        if (list.length >= 3) {
+        if (top3.length >= 3) {
             html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4">
                 <div class="text-4xl mb-2">🥉</div>
-                <img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
-                <p class="font-bold">${list[2].name}</p>
-                <p class="text-xs text-zinc-400">${list[2].totalValue} pts</p>
+                <img src="https://mc-heads.net/avatar/${top3[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
+                <p class="podium-name font-bold">${top3[2].name}</p>
+                <p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p>
             </div>`;
         }
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
 
-    /* All other functions (renderOverall, renderTable, renderPodium, renderHallOfFame, renderAll, switchCategory, showAddModal, savePlayer, etc.) are the same as the last stable version with the alphabetical tiebreaker already included */
+    function renderOverallPodium() {
+        const playerMap = new Map();
+        [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
+            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0};
+            const val = getTierValue(p.rank);
+            entry.totalValue += val;
+            if (val > entry.bestValue) entry.bestValue = val;
+            playerMap.set(p.name, entry);
+        }));
+        let list = Array.from(playerMap.values()).sort((a,b) => {
+            if (b.totalValue !== a.totalValue) return b.totalValue - a.totalValue;
+            return a.name.localeCompare(b.name);
+        }).slice(0,3);
+        renderUnifiedPodium(list, true);
+    }
 
-    function renderOverall() { /* unchanged - uses same alphabetical tiebreaker */ 
+    function renderPodium() {
+        let list = [...(data[currentCategory]||[])].sort((a,b)=>getTierValue(b.rank)-getTierValue(a.rank)||a.name.localeCompare(b.name)).slice(0,3);
+        renderUnifiedPodium(list, false);
+    }
+
+    function renderOverall() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
@@ -381,7 +392,7 @@
         tbody.innerHTML = html;
     }
 
-    function renderTable() { /* unchanged */ 
+    function renderTable() {
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
@@ -415,17 +426,7 @@
         tbody.innerHTML = html;
     }
 
-    function renderPodium() { /* unchanged */ 
-        const container = document.getElementById("podium");
-        let list = [...(data[currentCategory]||[])].sort((a,b)=>getTierValue(b.rank)-getTierValue(a.rank)||a.name.localeCompare(b.name)).slice(0,3);
-        let html = "";
-        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[1].rank)}">${list[1].rank}</div></div>`;
-        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[0].rank)}">${list[0].rank}</div></div>`;
-        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p><div class="tier-badge" style="background-image: ${getTierGradient(list[2].rank)}">${list[2].rank}</div></div>`;
-        container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
-    }
-
-    function renderHallOfFame() { /* unchanged */ 
+    function renderHallOfFame() {
         document.getElementById("tierpoints-dropdown").style.display = "none";
         document.getElementById("achievements-dropdown").style.display = "none";
         const grid = document.getElementById("hof-grid");
@@ -486,7 +487,7 @@
 
             if (isHoF) renderHallOfFame();
             else if (currentCategory === 0) { renderOverallPodium(); renderOverall(); }
-            else { if (currentCategory !== 5) renderPodium(); renderTable(); }
+            else { renderPodium(); renderTable(); }
 
             container.style.opacity = "1";
             hof.style.opacity = "1";
