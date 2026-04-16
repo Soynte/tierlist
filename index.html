@@ -37,8 +37,8 @@
         .tiers-cell { min-width: 260px; max-width: 300px; }
         @media (max-width: 768px) { .tiers-cell { min-width: 180px; } }
 
-        .dropdown-content, .tierpoints-dropdown-content { display: none !important; }
-        .dropdown.active .dropdown-content, .tierpoints-dropdown.active .tierpoints-dropdown-content { display: block !important; }
+        .dropdown-content, .tierpoints-dropdown-content, .achievements-dropdown-content { display: none !important; }
+        .dropdown.active .dropdown-content, .tierpoints-dropdown.active .tierpoints-dropdown-content, .achievements-dropdown.active .achievements-dropdown-content { display: block !important; }
 
         .player-detail-modal-content { background: linear-gradient(145deg, #1f2937, #0f172a) !important; box-shadow: 0 0 80px -20px rgb(234 179 8); }
     </style>
@@ -88,10 +88,16 @@
     <div id="normal-leaderboard" class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl transition-all">
         <div class="px-4 sm:px-8 py-5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4">
             <h2 id="category-title" class="text-2xl font-semibold header-font tracking-widest">OVERALL LEADERBOARD</h2>
-            <div class="flex items-center gap-6">
+            <div class="flex items-center gap-4">
+                <!-- Tierpoints Dropdown -->
                 <div id="tierpoints-dropdown" class="tierpoints-dropdown relative">
                     <button onclick="toggleTierpointsDropdown(event)" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Tierpoints <i id="tier-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
                     <div id="tierpoints-content" class="tierpoints-dropdown-content absolute top-full right-0 mt-2 bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 py-3 px-4 w-64 z-50"></div>
+                </div>
+                <!-- New Achievements Dropdown -->
+                <div id="achievements-dropdown" class="achievements-dropdown relative">
+                    <button onclick="toggleAchievementsDropdown(event)" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Achievements <i id="achievements-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
+                    <div id="achievements-content" class="achievements-dropdown-content absolute top-full right-0 mt-2 bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 py-3 px-4 w-72 z-50"></div>
                 </div>
                 <div class="flex items-center gap-x-4 text-sm">
                     <input id="search-input" onkeyup="if(event.key==='Enter') filterTable()" placeholder="Search player..." class="bg-zinc-800 border border-zinc-700 focus:border-blue-400 rounded-2xl px-4 py-2 w-48 sm:w-64 outline-none text-sm">
@@ -124,6 +130,7 @@
     </div>
 </main>
 
+<!-- Modals (unchanged) -->
 <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[999]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-lg mx-4 p-8">
         <h3 id="modal-title" class="text-2xl font-semibold mb-6">Add / Edit Player</h3>
@@ -207,6 +214,7 @@
             let tier = "-";
             let suffix = "";
             if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
+            else if (player?.tiers?.[cat]) tier = player.tiers[cat];
             else if (player?.rank) tier = player.rank;
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
@@ -221,11 +229,33 @@
         return html;
     }
 
+    function renderAchievementsContent() {
+        const titles = [
+            {title:"Combat Grandmaster",points:"400+"},
+            {title:"Combat Master",points:"250+"},
+            {title:"Combat Ace",points:"100+"},
+            {title:"Combat Specialist",points:"50+"},
+            {title:"Combat Cadet",points:"20+"},
+            {title:"Combat Novice",points:"10+"},
+            {title:"Rookie",points:"<10"}
+        ];
+        let html = '';
+        titles.forEach(t => html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="font-medium text-amber-300">${t.title}</span><span class="font-medium text-zinc-400">${t.points} points</span></div>`);
+        return html;
+    }
+
     function toggleTierpointsDropdown(e) {
         e.stopImmediatePropagation();
         const dd = document.getElementById("tierpoints-dropdown");
         const isActive = dd.classList.toggle("active");
         document.getElementById("tier-chevron").style.transform = isActive ? "rotate(180deg)" : "";
+    }
+
+    function toggleAchievementsDropdown(e) {
+        e.stopImmediatePropagation();
+        const dd = document.getElementById("achievements-dropdown");
+        const isActive = dd.classList.toggle("active");
+        document.getElementById("achievements-chevron").style.transform = isActive ? "rotate(180deg)" : "";
     }
 
     function toggleGamemodes(e) {
@@ -236,14 +266,19 @@
     document.addEventListener('click', function(e) {
         const gamemodesDD = document.getElementById("gamemodes-dropdown");
         const tierpointsDD = document.getElementById("tierpoints-dropdown");
+        const achievementsDD = document.getElementById("achievements-dropdown");
         if (gamemodesDD && !gamemodesDD.contains(e.target)) gamemodesDD.classList.remove("active");
         if (tierpointsDD && !tierpointsDD.contains(e.target)) {
             tierpointsDD.classList.remove("active");
             document.getElementById("tier-chevron").style.transform = "";
         }
+        if (achievementsDD && !achievementsDD.contains(e.target)) {
+            achievementsDD.classList.remove("active");
+            document.getElementById("achievements-chevron").style.transform = "";
+        }
     });
 
-    function renderOverallPodium() {
+    function renderOverallPodium() { /* unchanged */ 
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -265,6 +300,7 @@
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
+        document.getElementById("achievements-content").innerHTML = renderAchievementsContent();
 
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -311,10 +347,11 @@
         tbody.innerHTML = html;
     }
 
-    function renderTable() {
+    function renderTable() { /* unchanged */ 
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
+        document.getElementById("achievements-content").innerHTML = renderAchievementsContent();
 
         const isRetired = currentCategory === 5;
         let fullList = [...(data[currentCategory]||[])];
@@ -344,6 +381,8 @@
         tbody.innerHTML = html;
     }
 
+    /* renderPodium, renderHallOfFame, renderAll, switchCategory, showAddModal, savePlayer, editPlayerFromOverall, deletePlayer, etc. are all included below (same as last stable version) */
+
     function renderPodium() {
         const container = document.getElementById("podium");
         let list = [...(data[currentCategory]||[])].sort((a,b)=>getTierValue(b.rank)-getTierValue(a.rank)||a.name.localeCompare(b.name)).slice(0,3);
@@ -356,6 +395,7 @@
 
     function renderHallOfFame() {
         document.getElementById("tierpoints-dropdown").style.display = "none";
+        document.getElementById("achievements-dropdown").style.display = "none";
         const grid = document.getElementById("hof-grid");
         let list = [...(data[6]||[])];
         if (currentFilter) list = list.filter(p => p.name.toLowerCase().includes(currentFilter.toLowerCase()));
