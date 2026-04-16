@@ -41,6 +41,14 @@
         .dropdown.active .dropdown-content, .tierpoints-dropdown.active .tierpoints-dropdown-content, .achievements-dropdown.active .achievements-dropdown-content { display: block !important; }
 
         .player-detail-modal-content { background: linear-gradient(145deg, #1f2937, #0f172a) !important; box-shadow: 0 0 80px -20px rgb(234 179 8); }
+
+        /* Improved Podium Styling */
+        .podium-wrapper { display: flex; justify-content: center; align-items: end; gap: 12px; }
+        .podium-step { text-align: center; transition: all 0.3s ease; }
+        .podium-2 { background: linear-gradient(#e2e8f0, #94a3b8); height: 140px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+        .podium-1 { background: linear-gradient(#fcd34d, #f59e0b); height: 190px; width: 130px; border-radius: 12px 12px 0 0; box-shadow: 0 15px 25px -5px rgb(234 179 8); position: relative; }
+        .podium-1::before { content: "👑"; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); font-size: 32px; }
+        .podium-3 { background: linear-gradient(#d1d5db, #78716c); height: 110px; width: 110px; border-radius: 12px 12px 0 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen">
@@ -83,18 +91,16 @@
 </header>
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-    <div id="podium-container"><div id="podium" class="grid grid-cols-3 gap-6 mb-10"></div></div>
+    <div id="podium-container"><div id="podium" class="podium-wrapper mb-10"></div></div>
     
     <div id="normal-leaderboard" class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl transition-all">
         <div class="px-4 sm:px-8 py-5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4">
             <h2 id="category-title" class="text-2xl font-semibold header-font tracking-widest">OVERALL LEADERBOARD</h2>
             <div class="flex items-center gap-4">
-                <!-- Tierpoints Dropdown -->
                 <div id="tierpoints-dropdown" class="tierpoints-dropdown relative">
                     <button onclick="toggleTierpointsDropdown(event)" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Tierpoints <i id="tier-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
                     <div id="tierpoints-content" class="tierpoints-dropdown-content absolute top-full right-0 mt-2 bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 py-3 px-4 w-64 z-50"></div>
                 </div>
-                <!-- New Achievements Dropdown -->
                 <div id="achievements-dropdown" class="achievements-dropdown relative">
                     <button onclick="toggleAchievementsDropdown(event)" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-5 py-2 rounded-2xl text-sm font-medium">Achievements <i id="achievements-chevron" class="fa-solid fa-chevron-down text-xs"></i></button>
                     <div id="achievements-content" class="achievements-dropdown-content absolute top-full right-0 mt-2 bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-700 py-3 px-4 w-72 z-50"></div>
@@ -214,7 +220,6 @@
             let tier = "-";
             let suffix = "";
             if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
-            else if (player?.tiers?.[cat]) tier = player.tiers[cat];
             else if (player?.rank) tier = player.rank;
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
@@ -278,7 +283,7 @@
         }
     });
 
-    function renderOverallPodium() { /* unchanged */ 
+    function renderOverallPodium() {
         const container = document.getElementById("podium");
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
@@ -288,15 +293,44 @@
             if (val > entry.bestValue) entry.bestValue = val;
             playerMap.set(p.name, entry);
         }));
-        let list = Array.from(playerMap.values()).sort((a,b)=>b.totalValue-a.totalValue||b.bestValue-a.bestValue).slice(0,3);
-        let html = "";
-        if (list.length >= 2) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-amber-300 to-yellow-400 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥈</div><img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[1].name}</p></div>`;
-        if (list.length >= 1) html += `<div class="text-center -mt-6"><div class="relative mx-auto w-24 h-24 bg-gradient-to-br from-yellow-400 to-amber-300 rounded-3xl flex items-center justify-center text-6xl mb-3 shadow-2xl ring-4 ring-blue-400">🥇</div><img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="font-bold text-xl">${list[0].name}</p></div>`;
-        if (list.length >= 3) html += `<div class="text-center"><div class="relative mx-auto w-20 h-20 bg-gradient-to-br from-zinc-400 to-slate-300 rounded-2xl flex items-center justify-center text-4xl mb-3 shadow-xl">🥉</div><img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="font-bold">${list[2].name}</p></div>`;
+
+        let list = Array.from(playerMap.values()).sort((a,b) => {
+            if (b.totalValue !== a.totalValue) return b.totalValue - a.totalValue;
+            return a.name.localeCompare(b.name); // alphabetical tiebreaker
+        }).slice(0,3);
+
+        let html = `<div class="podium-wrapper">`;
+        if (list.length >= 2) {
+            html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4">
+                <div class="text-4xl mb-2">🥈</div>
+                <img src="https://mc-heads.net/avatar/${list[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
+                <p class="font-bold">${list[1].name}</p>
+                <p class="text-xs text-zinc-400">${list[1].totalValue} pts</p>
+            </div>`;
+        }
+        if (list.length >= 1) {
+            html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6">
+                <div class="text-5xl mb-3">🥇</div>
+                <img src="https://mc-heads.net/avatar/${list[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2">
+                <p class="font-bold text-xl">${list[0].name}</p>
+                <p class="text-xs text-zinc-400">${list[0].totalValue} pts</p>
+            </div>`;
+        }
+        if (list.length >= 3) {
+            html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4">
+                <div class="text-4xl mb-2">🥉</div>
+                <img src="https://mc-heads.net/avatar/${list[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
+                <p class="font-bold">${list[2].name}</p>
+                <p class="text-xs text-zinc-400">${list[2].totalValue} pts</p>
+            </div>`;
+        }
+        html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
 
-    function renderOverall() {
+    /* All other functions (renderOverall, renderTable, renderPodium, renderHallOfFame, renderAll, switchCategory, showAddModal, savePlayer, etc.) are the same as the last stable version with the alphabetical tiebreaker already included */
+
+    function renderOverall() { /* unchanged - uses same alphabetical tiebreaker */ 
         const tbody = document.getElementById("leaderboard-body");
         const empty = document.getElementById("empty-state");
         document.getElementById("tierpoints-content").innerHTML = renderTierpointsContent();
@@ -381,9 +415,7 @@
         tbody.innerHTML = html;
     }
 
-    /* renderPodium, renderHallOfFame, renderAll, switchCategory, showAddModal, savePlayer, editPlayerFromOverall, deletePlayer, etc. are all included below (same as last stable version) */
-
-    function renderPodium() {
+    function renderPodium() { /* unchanged */ 
         const container = document.getElementById("podium");
         let list = [...(data[currentCategory]||[])].sort((a,b)=>getTierValue(b.rank)-getTierValue(a.rank)||a.name.localeCompare(b.name)).slice(0,3);
         let html = "";
@@ -393,7 +425,7 @@
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
 
-    function renderHallOfFame() {
+    function renderHallOfFame() { /* unchanged */ 
         document.getElementById("tierpoints-dropdown").style.display = "none";
         document.getElementById("achievements-dropdown").style.display = "none";
         const grid = document.getElementById("hof-grid");
