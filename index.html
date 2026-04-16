@@ -247,13 +247,20 @@
         return "Rookie";
     }
 
+    // FIXED: Now correctly reads player.tiers[cat] for Overall view
     function renderCompactTiers(player) {
         let html = '<div class="flex flex-wrap gap-2">';
         [1,2,3,4].forEach(cat => {
             let tier = "-";
             let suffix = "";
-            if (player?.retiredTiers?.[cat]) { tier = player.retiredTiers[cat]; suffix = " (R)"; }
-            else if (player?.rank) tier = player.rank;
+            if (player?.retiredTiers?.[cat]) { 
+                tier = player.retiredTiers[cat]; 
+                suffix = " (R)"; 
+            } else if (player?.tiers?.[cat]) {
+                tier = player.tiers[cat];
+            } else if (player?.rank) {
+                tier = player.rank;
+            }
             html += `<div class="flex flex-col items-center"><img src="${gamemodeIcons[cat]}" class="w-6 h-6 mb-1"><span class="tier-badge" style="background-image: ${getTierGradient(tier)}">${tier}${suffix}</span></div>`;
         });
         html += '</div>';
@@ -268,15 +275,7 @@
     }
 
     function renderAchievementsContent() {
-        const titles = [
-            {title:"Combat Grandmaster",points:"400+"},
-            {title:"Combat Master",points:"250+"},
-            {title:"Combat Ace",points:"100+"},
-            {title:"Combat Specialist",points:"50+"},
-            {title:"Combat Cadet",points:"20+"},
-            {title:"Combat Novice",points:"10+"},
-            {title:"Rookie",points:"<10"}
-        ];
+        const titles = [{title:"Combat Grandmaster",points:"400+"},{title:"Combat Master",points:"250+"},{title:"Combat Ace",points:"100+"},{title:"Combat Specialist",points:"50+"},{title:"Combat Cadet",points:"20+"},{title:"Combat Novice",points:"10+"},{title:"Rookie",points:"<10"}];
         let html = '';
         titles.forEach(t => html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="font-medium text-amber-300">${t.title}</span><span class="font-medium text-zinc-400">${t.points} points</span></div>`);
         return html;
@@ -300,14 +299,12 @@
         document.getElementById("login-error").classList.add("hidden");
     }
 
-    function hideLoginModal() {
-        document.getElementById("login-modal").classList.add("hidden");
-    }
+    function hideLoginModal() { document.getElementById("login-modal").classList.add("hidden"); }
 
     function attemptLogin() {
         const user = document.getElementById("login-username").value.trim();
         const pass = document.getElementById("login-password").value;
-        if (user === "admin" && pass === "mypvp2026") {
+        if (user === ADMIN_USER && pass === ADMIN_PASS) {
             isAdmin = true;
             localStorage.setItem("mvp_admin", "true");
             hideLoginModal();
@@ -330,7 +327,6 @@
     function updateAdminUI() {
         const adminElements = document.querySelectorAll('.admin-only');
         const adminBtn = document.getElementById("admin-btn");
-
         if (isAdmin) {
             adminElements.forEach(el => el.classList.remove("hidden"));
             adminBtn.innerHTML = `<i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>`;
@@ -345,30 +341,9 @@
     function renderUnifiedPodium(top3, isOverall) {
         const container = document.getElementById("podium");
         let html = `<div class="podium-wrapper">`;
-        if (top3.length >= 2) {
-            html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4">
-                <div class="text-4xl mb-2">🥈</div>
-                <img src="https://mc-heads.net/avatar/${top3[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
-                <p class="podium-name font-bold">${top3[1].name}</p>
-                <p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p>
-            </div>`;
-        }
-        if (top3.length >= 1) {
-            html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6">
-                <div class="text-5xl mb-3">🥇</div>
-                <img src="https://mc-heads.net/avatar/${top3[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2">
-                <p class="podium-name font-bold text-xl">${top3[0].name}</p>
-                <p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p>
-            </div>`;
-        }
-        if (top3.length >= 3) {
-            html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4">
-                <div class="text-4xl mb-2">🥉</div>
-                <img src="https://mc-heads.net/avatar/${top3[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2">
-                <p class="podium-name font-bold">${top3[2].name}</p>
-                <p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p>
-            </div>`;
-        }
+        if (top3.length >= 2) html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥈</div><img src="https://mc-heads.net/avatar/${top3[1].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[1].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p></div>`;
+        if (top3.length >= 1) html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6"><div class="text-5xl mb-3">🥇</div><img src="https://mc-heads.net/avatar/${top3[0].name}/64" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="podium-name font-bold text-xl">${top3[0].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p></div>`;
+        if (top3.length >= 3) html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥉</div><img src="https://mc-heads.net/avatar/${top3[2].name}/64" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[2].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p></div>`;
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
@@ -382,10 +357,7 @@
             if (val > entry.bestValue) entry.bestValue = val;
             playerMap.set(p.name, entry);
         }));
-        let list = Array.from(playerMap.values()).sort((a,b) => {
-            if (b.totalValue !== a.totalValue) return b.totalValue - a.totalValue;
-            return a.name.localeCompare(b.name);
-        }).slice(0,3);
+        let list = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || a.name.localeCompare(b.name)).slice(0,3);
         renderUnifiedPodium(list, true);
     }
 
@@ -416,14 +388,12 @@
             playerMap.set(p.name, entry);
         });
 
-        let fullList = Array.from(playerMap.values()).sort((a,b) => {
-            if (b.totalValue !== a.totalValue) return b.totalValue - a.totalValue;
-            return a.name.localeCompare(b.name);
-        });
-
+        let fullList = Array.from(playerMap.values()).sort((a,b) => b.totalValue - a.totalValue || a.name.localeCompare(b.name));
         let displayedList = currentFilter ? fullList.filter(p=>p.name.toLowerCase().includes(currentFilter.toLowerCase())) : fullList;
+
         if (displayedList.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
         empty.classList.add("hidden");
+
         let html = "";
         displayedList.forEach(player => {
             const trueRank = fullList.findIndex(p => p.name === player.name) + 1;
@@ -504,7 +474,7 @@
                     ${primeHTML}
                 </div>
                 <div class="flex justify-center py-8 px-8">
-                    <div class="skin-display"><img src="https://visage.surgeplay.com/full/1024/${player.name}" class="skin-render"></div>
+                    <img src="https://visage.surgeplay.com/full/1024/${player.name}" class="skin-render">
                 </div>
                 <div class="px-8 pb-8 text-center">
                     <p class="text-zinc-300 leading-relaxed text-lg italic">"${player.description || '—'}"</p>
@@ -774,22 +744,20 @@
 
     function resetData() {
         if (confirm("Reset ALL data and start fresh?")) {
-            localStorage.removeItem("mvp_leaderboards");
-            location.reload();
+            data = {1: [], 2: [], 3: [], 4: [], 5: [], 6: []};
+            saveToStorage();
+            renderAll();
         }
     }
 
     function showPlayerDetail(name) {
         let playerData = {};
         let totalPoints = 0;
-        let bestTier = "Low Tier 5";
         [1,2,3,4].forEach(cat => {
             const p = (data[cat]||[]).find(pl => pl.name === name);
             if (p) {
                 playerData[cat] = p.rank;
-                const val = getTierValue(p.rank);
-                totalPoints += val;
-                if (val > getTierValue(bestTier)) bestTier = p.rank;
+                totalPoints += getTierValue(p.rank);
             }
         });
         const retiredPlayer = (data[5]||[]).find(pl => pl.name === name);
@@ -846,13 +814,7 @@
         });
     }
 
-    function saveToFirebase() {
-        db.ref('leaderboards').set(data);
-    }
-
-    function saveToStorage() {
-        saveToFirebase();
-    }
+    function saveToStorage() { db.ref('leaderboards').set(data); }
 
     window.onload = function() {
         if (localStorage.getItem("mvp_admin") === "true") isAdmin = true;
