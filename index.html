@@ -224,7 +224,7 @@
         return "Rookie";
     }
 
-    // NameMC 2D flat front face with UUID (exactly as you requested)
+    // NameMC 2D flat front face with UUID (exactly what you asked for)
     function getPlayerHeadUrl(player, size = 64) {
         if (player && player.uuid) {
             const scale = Math.round(size / 16);
@@ -233,7 +233,7 @@
         return `https://mc-heads.net/avatar/Steve/${size}?overlay`;
     }
 
-    // Automatic UUID lookup from Mojang/NameMC
+    // Automatic UUID lookup from Mojang API
     async function lookupUUID(username) {
         try {
             const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
@@ -552,7 +552,10 @@
             </div>
             <div>
                 <label class="block text-zinc-400 text-sm mb-1">UUID (auto-filled from NameMC)</label>
-                <input id="player-uuid" type="text" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="Will be filled automatically">
+                <div class="flex gap-x-3">
+                    <input id="player-uuid" type="text" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="Will be filled automatically">
+                    <button onclick="manualLookupUUID()" class="bg-blue-500 hover:bg-blue-600 px-5 rounded-2xl text-white font-medium">🔍 Lookup</button>
+                </div>
             </div>`;
 
         if (isHoF) {
@@ -624,15 +627,33 @@
         modal.classList.remove("hidden");
     }
 
+    async function manualLookupUUID() {
+        const nameField = document.getElementById("player-name");
+        const uuidField = document.getElementById("player-uuid");
+        const name = nameField.value.trim();
+        if (!name) return alert("Enter a username first!");
+
+        const originalText = uuidField.placeholder;
+        uuidField.placeholder = "Looking up...";
+        const uuid = await lookupUUID(name);
+        uuidField.placeholder = originalText;
+
+        if (uuid) {
+            uuidField.value = uuid;
+            alert("✅ UUID found and filled!");
+        } else {
+            alert("❌ No UUID found for this name (will use Steve skin)");
+            uuidField.value = "";
+        }
+    }
+
     function hideModal() { document.getElementById("modal").classList.add("hidden"); }
 
     async function savePlayer() {
         let name = document.getElementById("player-name").value.trim();
-        let uuidInput = document.getElementById("player-uuid").value.trim();
+        let uuid = document.getElementById("player-uuid").value.trim();
 
         if (!name) return alert("Username is required!");
-
-        let uuid = uuidInput;
 
         // AUTO LOOKUP if no UUID provided
         if (!uuid) {
@@ -641,11 +662,6 @@
             loading.textContent = "Looking up UUID on NameMC...";
             uuid = await lookupUUID(name);
             loading.textContent = original;
-            if (uuid) {
-                console.log(`UUID found for ${name}: ${uuid}`);
-            } else {
-                console.log(`No UUID found for ${name} – using Steve`);
-            }
         }
 
         const editId = document.getElementById("edit-index").value;
