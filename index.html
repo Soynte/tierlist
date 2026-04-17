@@ -242,9 +242,9 @@
         return "Rookie";
     }
 
-    // UPDATED: Mineskin with 2nd layer (hat/helmet)
+    // UPDATED: Mineskin.eu with 2nd layer (helm endpoint)
     function getPlayerHeadUrl(name, size = 64) {
-        return `https://mineskin.eu/avatar/${name}?overlay`;
+        return `https://mineskin.eu/helm/${name}/${size}`;
     }
 
     function renderCompactTiers(player) {
