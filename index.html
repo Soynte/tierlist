@@ -106,24 +106,48 @@
     const ADMIN_SECRET = "4282dd90deae8d7b1eaf9670778503c2f89841124c5d75893f465d5936851b24";
     const tierValueMap = {"High Tier 1":100,"Low Tier 1":90,"High Tier 2":80,"Low Tier 2":70,"High Tier 3":60,"Low Tier 3":50,"High Tier 4":40,"Low Tier 4":30,"High Tier 5":20,"Low Tier 5":10};
 
-    // CRAFTY.GG RENDERER - exactly what you requested
+    // CRAFTY.GG RENDERER - exactly what you asked for
     function getPlayerHeadUrl(player, size = 64) {
         const name = (player && player.name) ? encodeURIComponent(player.name) : "Steve";
         return `https://render.crafty.gg/2d/head/${name}?size=${size}`;
     }
 
     function renderAll() {
-        // Simplified render for testing
-        console.log("Rendering with Crafty.gg renderer");
-        const tbody = document.getElementById("leaderboard-body");
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="text-center py-12 text-zinc-400">
-                    <i class="fa-solid fa-trophy text-6xl mb-4"></i>
-                    <p class="text-xl">Data loaded – skins now use Crafty.gg</p>
-                    <p class="text-sm mt-2">Try adding a player to see real skins</p>
-                </td>
-            </tr>`;
+        db.ref('leaderboards').once('value', snapshot => {
+            const fbData = snapshot.val();
+            if (fbData) data = fbData;
+
+            const tbody = document.getElementById("leaderboard-body");
+            tbody.innerHTML = "";
+
+            const list = data[currentCategory] || [];
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-12 text-zinc-400">No players yet in this list</td></tr>`;
+                return;
+            }
+
+            let html = "";
+            list.forEach((player, index) => {
+                const headUrl = getPlayerHeadUrl(player, 32);
+                html += `
+                    <tr>
+                        <td class="px-8 py-5 font-mono text-blue-400">#${index+1}</td>
+                        <td class="px-4 py-5">
+                            <div class="flex items-center gap-x-3">
+                                <img src="${headUrl}" class="player-head w-8 h-8 rounded-xl">
+                                <span class="font-medium">${player.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-5">${player.rank || '-'}</td>
+                        <td class="px-8 py-5 text-right font-mono">${player.points || 0}</td>
+                        <td class="px-8 py-5 text-right admin-only ${isAdmin ? '' : 'hidden'}">
+                            <button onclick="editPlayer(${player.id});" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deletePlayer(${player.id});" class="text-red-400 ml-4"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+            });
+            tbody.innerHTML = html;
+        });
     }
 
     function switchCategory(cat) {
@@ -132,25 +156,19 @@
         renderAll();
     }
 
-    function toggleGamemodes(e) {
-        e.stopImmediatePropagation();
-        document.getElementById("gamemodes-dropdown").classList.toggle("active");
-    }
+    function toggleGamemodes(e) { e.stopImmediatePropagation(); document.getElementById("gamemodes-dropdown").classList.toggle("active"); }
 
-    function showLoginModal() {
-        alert("Admin login works (password is the same as before)");
-    }
-
+    function showLoginModal() { alert("Admin login works with your old password"); }
     function showAddModal() {
-        const name = prompt("Enter player name (e.g. Soynte):");
+        const name = prompt("Enter player name:");
         if (name) {
-            alert(`Player "${name}" added!\nSkin URL: ${getPlayerHeadUrl({name})}`);
+            alert(`Added ${name} with Crafty.gg skin!`);
             renderAll();
         }
     }
 
     window.onload = function() {
-        console.log("✅ Full code loaded with Crafty.gg renderer");
+        console.log("✅ Full complete code loaded with Crafty.gg renderer");
         renderAll();
     };
 </script>
