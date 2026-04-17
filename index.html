@@ -244,11 +244,9 @@
         return "Rookie";
     }
 
-    // FIXED: Using Visage.surgeplay.com/head with 2nd layer (same service as HoF)
-    // ✅ FRONT-FACING HEADS (flat 2D style + 2nd layer helmet) – exactly like it used to be
-    function getPlayerHeadUrl(name, size = 64) {
-        return `https://visage.surgeplay.com/head/${size}/${name}`;
-        return `https://mc-heads.net/avatar/${name}/${size}?overlay`;
+        // CRAFTY.GG RENDERER - exactly what you asked for
+    function getPlayerHeadUrl(name, size = 32) {
+        return `https://render.crafty.gg/2d/head/${encodeURIComponent(name)}?size=${size}`;
     }
 
     function renderCompactTiers(player) {
