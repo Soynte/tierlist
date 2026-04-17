@@ -224,9 +224,14 @@
         return "Rookie";
     }
 
-    // FLAT FRONT-FACING HEADS WITH HELMET LAYER
-    function getPlayerHeadUrl(name, size = 64) {
-        return `https://mc-heads.net/avatar/${name}/${size}?overlay`;
+    // NameMC 2D flat front face with UUID (exactly what you asked for) + fallback
+    function getPlayerHeadUrl(player, size = 64) {
+        if (player && player.uuid) {
+            const scale = Math.round(size / 16);
+            return `https://s.namemc.com/2d/skin/face.png?id=${player.uuid}&scale=${scale}`;
+        }
+        // fallback for players without UUID yet
+        return `https://mc-heads.net/avatar/${player.name}/${size}?overlay`;
     }
 
     function renderCompactTiers(player) {
@@ -326,9 +331,9 @@
     function renderUnifiedPodium(top3, isOverall) {
         const container = document.getElementById("podium");
         let html = `<div class="podium-wrapper">`;
-        if (top3.length >= 2) html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥈</div><img src="${getPlayerHeadUrl(top3[1].name, 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[1].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p></div>`;
-        if (top3.length >= 1) html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6"><div class="text-5xl mb-3">🥇</div><img src="${getPlayerHeadUrl(top3[0].name, 64)}" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="podium-name font-bold text-xl">${top3[0].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p></div>`;
-        if (top3.length >= 3) html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥉</div><img src="${getPlayerHeadUrl(top3[2].name, 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[2].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p></div>`;
+        if (top3.length >= 2) html += `<div class="podium-step podium-2 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥈</div><img src="${getPlayerHeadUrl(top3[1], 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[1].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[1].totalValue : getTierValue(top3[1].rank)} pts</p></div>`;
+        if (top3.length >= 1) html += `<div class="podium-step podium-1 flex flex-col items-center justify-end pb-6"><div class="text-5xl mb-3">🥇</div><img src="${getPlayerHeadUrl(top3[0], 64)}" class="player-head mx-auto rounded-3xl w-20 h-20 mb-2"><p class="podium-name font-bold text-xl">${top3[0].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[0].totalValue : getTierValue(top3[0].rank)} pts</p></div>`;
+        if (top3.length >= 3) html += `<div class="podium-step podium-3 flex flex-col items-center justify-end pb-4"><div class="text-4xl mb-2">🥉</div><img src="${getPlayerHeadUrl(top3[2], 64)}" class="player-head mx-auto rounded-2xl w-16 h-16 mb-2"><p class="podium-name font-bold">${top3[2].name}</p><p class="text-xs text-zinc-900">${isOverall ? top3[2].totalValue : getTierValue(top3[2].rank)} pts</p></div>`;
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
@@ -336,7 +341,7 @@
     function renderOverallPodium() {
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
-            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0};
+            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,uuid:p.uuid};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
@@ -359,7 +364,7 @@
 
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
-            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{}};
+            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{},uuid:p.uuid};
             const val = getTierValue(p.rank);
             entry.totalValue += val;
             if (val > entry.bestValue) entry.bestValue = val;
@@ -368,7 +373,7 @@
         }));
 
         (data[5]||[]).forEach(p => {
-            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{}};
+            let entry = playerMap.get(p.name) || {name:p.name,totalValue:0,bestValue:0,tiers:{},retiredTiers:{},uuid:p.uuid};
             entry.retiredTiers = p.retiredTiers || {};
             playerMap.set(p.name, entry);
         });
@@ -386,7 +391,7 @@
             html += `<tr class="transition-colors">
                 <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
                 <td onclick="showPlayerDetail('${player.name}');event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
-                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player.name, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
+                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
                     <div class="text-xs mt-1 text-amber-300 font-medium">${title}</div>
                 </td>
                 <td class="px-4 py-5 tiers-cell">${renderCompactTiers(player)}</td>
@@ -421,7 +426,7 @@
             html += `<tr class="transition-colors">
                 <td class="px-8 py-5 font-mono text-blue-400 font-semibold">#${trueRank}</td>
                 <td onclick="showPlayerDetail('${player.name}');event.stopImmediatePropagation()" class="px-4 py-5 cursor-pointer hover:underline">
-                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player.name, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
+                    <div class="flex items-center gap-x-3"><img src="${getPlayerHeadUrl(player, 32)}" class="player-head w-8 h-8 rounded-xl"><span class="font-medium">${player.name}</span></div>
                 </td>
                 <td class="px-4 py-5 tiers-cell">${tiersHTML}</td>
                 <td class="px-6 py-5 font-mono text-amber-300 font-semibold text-right w-28">${points}</td>
@@ -526,7 +531,19 @@
 
         titleEl.textContent = editId ? "Edit Player" : "Add Player";
 
-        let contentHTML = `<div><label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label><div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4"><i class="fa-solid fa-user text-blue-400"></i><input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch"></div></div>`;
+        let contentHTML = `
+            <div>
+                <label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label>
+                <div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4">
+                    <i class="fa-solid fa-user text-blue-400"></i>
+                    <input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch">
+                </div>
+            </div>
+            <div>
+                <label class="block text-zinc-400 text-sm mb-1">UUID (optional – for perfect NameMC skin)</label>
+                <input id="player-uuid" type="text" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="e.g. 7cd3eba42841cdf9">
+                <p class="text-xs text-zinc-500 mt-1">Get it from namemc.com/profile/USERNAME</p>
+            </div>`;
 
         if (isHoF) {
             contentHTML += `<div class="grid grid-cols-2 gap-4"><div><label class="block text-zinc-400 text-sm mb-1">Prime From Year</label><input id="prime-from" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2022"></div><div><label class="block text-zinc-400 text-sm mb-1">Prime To Year</label><input id="prime-to" type="number" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="2025"></div></div><div class="mt-4"><label class="block text-zinc-400 text-sm mb-2">Prime Tiers</label><div id="prime-tiers-container" class="space-y-4"></div></div><div><label class="block text-zinc-400 text-sm mb-1">Description</label><textarea id="player-description" rows="3" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Longer background story..."></textarea></div><div><label class="block text-zinc-400 text-sm mb-1">Quote</label><textarea id="player-quote" rows="2" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-base resize-none" placeholder="Short memorable quote..."></textarea></div>`;
@@ -566,6 +583,7 @@
             }
             if (player) {
                 document.getElementById("player-name").value = player.name || "";
+                document.getElementById("player-uuid").value = player.uuid || "";
                 if (isHoF) {
                     document.getElementById("prime-from").value = player.primeFrom || "";
                     document.getElementById("prime-to").value = player.primeTo || "";
@@ -600,6 +618,7 @@
 
     function savePlayer() {
         const name = document.getElementById("player-name").value.trim();
+        const uuid = document.getElementById("player-uuid").value.trim();
         if (!name) return alert("Username is required!");
 
         const editId = document.getElementById("edit-index").value;
@@ -621,6 +640,7 @@
                 const player = data[6].find(p => p.id == editId);
                 if (player) {
                     player.name = name;
+                    player.uuid = uuid || player.uuid;
                     player.primeFrom = primeFrom;
                     player.primeTo = primeTo;
                     player.description = description;
@@ -628,7 +648,7 @@
                     player.primeTiers = primeTiers;
                 }
             } else {
-                data[6].push({name, primeFrom, primeTo, description, quote, primeTiers, id: Date.now()});
+                data[6].push({name, uuid, primeFrom, primeTo, description, quote, primeTiers, id: Date.now()});
             }
         } else if (editMode === "overall") {
             [1,2,3,4].forEach(cat => {
@@ -637,8 +657,12 @@
                 const desiredTier = select ? select.value : "";
                 const idx = data[cat].findIndex(p => p.id == editId);
                 if (desiredTier && desiredTier !== "") {
-                    if (idx !== -1) data[cat][idx].rank = desiredTier;
-                    else data[cat].push({name, rank: desiredTier, id: Date.now()});
+                    if (idx !== -1) {
+                        data[cat][idx].rank = desiredTier;
+                        data[cat][idx].uuid = uuid || data[cat][idx].uuid;
+                    } else {
+                        data[cat].push({name, rank: desiredTier, uuid, id: Date.now()});
+                    }
                 } else if (idx !== -1) data[cat].splice(idx, 1);
             });
         } else if (editMode === "retired") {
@@ -650,9 +674,12 @@
             data[5] = data[5] || [];
             if (editId) {
                 const player = data[5].find(p => p.id == editId);
-                if (player) player.retiredTiers = retiredTiers;
+                if (player) {
+                    player.retiredTiers = retiredTiers;
+                    player.uuid = uuid || player.uuid;
+                }
             } else {
-                data[5].push({name, retiredTiers, id: Date.now()});
+                data[5].push({name, retiredTiers, uuid, id: Date.now()});
             }
         } else {
             const tier = document.getElementById("tier-" + currentCategory).value;
@@ -662,9 +689,10 @@
                 if (player) {
                     if (tier && tier !== "") player.rank = tier;
                     else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
+                    player.uuid = uuid || player.uuid;
                 }
             } else if (tier && tier !== "") {
-                data[currentCategory].push({name, rank: tier, id: Date.now()});
+                data[currentCategory].push({name, rank: tier, uuid, id: Date.now()});
             }
         }
 
@@ -738,15 +766,20 @@
     function showPlayerDetail(name) {
         let playerData = {};
         let totalPoints = 0;
+        let currentPlayer = null;
         [1,2,3,4].forEach(cat => {
             const p = (data[cat]||[]).find(pl => pl.name === name);
             if (p) {
                 playerData[cat] = p.rank;
                 totalPoints += getTierValue(p.rank);
+                if (!currentPlayer) currentPlayer = p;
             }
         });
         const retiredPlayer = (data[5]||[]).find(pl => pl.name === name);
-        if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
+        if (retiredPlayer) {
+            playerData.retiredTiers = retiredPlayer.retiredTiers;
+            if (!currentPlayer) currentPlayer = retiredPlayer;
+        }
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
             let entry = playerMap.get(p.name) || {name:p.name,totalValue:0};
@@ -758,7 +791,7 @@
         const achievement = getAchievementTitle(totalPoints);
 
         document.getElementById("detail-name").textContent = name;
-        document.getElementById("detail-head").src = getPlayerHeadUrl(name, 128);
+        document.getElementById("detail-head").src = getPlayerHeadUrl(currentPlayer || {name}, 128);
         const badgeEl = document.getElementById("detail-badge");
         badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${achievement}`;
         document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
