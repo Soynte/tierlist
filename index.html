@@ -242,9 +242,9 @@
         return "Rookie";
     }
 
-    // UPDATED: Mineskin.eu with 2nd layer (helm endpoint)
+    // FIXED: Using Visage.surgeplay.com/head with 2nd layer (same service as HoF)
     function getPlayerHeadUrl(name, size = 64) {
-        return `https://mineskin.eu/helm/${name}/${size}`;
+        return `https://visage.surgeplay.com/head/${size}/${name}`;
     }
 
     function renderCompactTiers(player) {
