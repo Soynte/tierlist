@@ -20,8 +20,6 @@
         .player-head { border: 3px solid #18181b; box-shadow: 0 0 15px rgba(59,130,246,0.3); transition: transform 0.2s ease; }
         .player-head:hover { transform: scale(1.08); }
 
-        .preview-skin { border: 3px solid #eab308; box-shadow: 0 0 20px rgba(234,179,8,0.4); }
-
         .hof-card { transition: all 0.4s cubic-bezier(0.4,0,0.2,1); background: linear-gradient(145deg,#18181b,#111113); border: 2px solid #3b82f6; box-shadow: 0 0 40px -10px rgb(59 130 246); }
         .hof-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 25px 50px -15px rgb(59 130 246); border-color: #eab308; }
 
@@ -226,7 +224,7 @@
         return "Rookie";
     }
 
-    // EXACT NameMC face you showed in the picture
+    // Exact NameMC face link you showed in the picture
     function getPlayerHeadUrl(player, size = 64) {
         if (player && player.uuid) {
             const scale = Math.round(size / 16);
@@ -235,13 +233,13 @@
         return `https://mc-heads.net/avatar/Steve/${size}?overlay`;
     }
 
-    // Automatic UUID lookup
+    // CORS-friendly UUID lookup (this fixes the error you saw)
     async function lookupUUID(username) {
         try {
-            const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+            const res = await fetch(`https://api.ashcon.app/mojang/v2/user/${username}`);
             if (res.ok) {
                 const json = await res.json();
-                return json.id;
+                return json.uuid.replace(/-/g, '');
             }
         } catch (e) {}
         return null;
@@ -558,10 +556,6 @@
                     <input id="player-uuid" type="text" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="Will be filled automatically">
                     <button onclick="manualLookupUUID()" class="bg-amber-400 hover:bg-amber-500 px-6 rounded-2xl text-black font-medium">🔍 Lookup</button>
                 </div>
-            </div>
-            <div id="skin-preview-container" class="hidden mt-4">
-                <label class="block text-zinc-400 text-sm mb-1">Skin Preview</label>
-                <div class="flex justify-center"><img id="skin-preview" class="preview-skin rounded-2xl" width="128" height="128"></div>
             </div>`;
 
         if (isHoF) {
