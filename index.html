@@ -20,6 +20,8 @@
         .player-head { border: 3px solid #18181b; box-shadow: 0 0 15px rgba(59,130,246,0.3); transition: transform 0.2s ease; }
         .player-head:hover { transform: scale(1.08); }
 
+        .preview-skin { border: 3px solid #eab308; box-shadow: 0 0 20px rgba(234,179,8,0.4); }
+
         .hof-card { transition: all 0.4s cubic-bezier(0.4,0,0.2,1); background: linear-gradient(145deg,#18181b,#111113); border: 2px solid #3b82f6; box-shadow: 0 0 40px -10px rgb(59 130 246); }
         .hof-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 25px 50px -15px rgb(59 130 246); border-color: #eab308; }
 
@@ -224,7 +226,7 @@
         return "Rookie";
     }
 
-    // NameMC 2D flat front face with UUID (exactly what you asked for)
+    // EXACT NameMC face you showed in the picture
     function getPlayerHeadUrl(player, size = 64) {
         if (player && player.uuid) {
             const scale = Math.round(size / 16);
@@ -233,13 +235,13 @@
         return `https://mc-heads.net/avatar/Steve/${size}?overlay`;
     }
 
-    // Automatic UUID lookup from Mojang API
+    // Automatic UUID lookup
     async function lookupUUID(username) {
         try {
             const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
             if (res.ok) {
                 const json = await res.json();
-                return json.id; // UUID without dashes
+                return json.id;
             }
         } catch (e) {}
         return null;
@@ -547,15 +549,19 @@
                 <label class="block text-zinc-400 text-sm mb-1">Minecraft Username</label>
                 <div class="flex items-center gap-x-3 bg-zinc-800 rounded-2xl px-4">
                     <i class="fa-solid fa-user text-blue-400"></i>
-                    <input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Notch">
+                    <input id="player-name" type="text" class="flex-1 bg-transparent py-4 outline-none text-lg placeholder-zinc-500" placeholder="Soynte">
                 </div>
             </div>
             <div>
                 <label class="block text-zinc-400 text-sm mb-1">UUID (auto-filled from NameMC)</label>
                 <div class="flex gap-x-3">
                     <input id="player-uuid" type="text" class="flex-1 bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="Will be filled automatically">
-                    <button onclick="manualLookupUUID()" class="bg-blue-500 hover:bg-blue-600 px-5 rounded-2xl text-white font-medium">🔍 Lookup</button>
+                    <button onclick="manualLookupUUID()" class="bg-amber-400 hover:bg-amber-500 px-6 rounded-2xl text-black font-medium">🔍 Lookup</button>
                 </div>
+            </div>
+            <div id="skin-preview-container" class="hidden mt-4">
+                <label class="block text-zinc-400 text-sm mb-1">Skin Preview</label>
+                <div class="flex justify-center"><img id="skin-preview" class="preview-skin rounded-2xl" width="128" height="128"></div>
             </div>`;
 
         if (isHoF) {
@@ -597,6 +603,7 @@
             if (player) {
                 document.getElementById("player-name").value = player.name || "";
                 document.getElementById("player-uuid").value = player.uuid || "";
+                if (player.uuid) updateSkinPreview(player.uuid);
                 if (isHoF) {
                     document.getElementById("prime-from").value = player.primeFrom || "";
                     document.getElementById("prime-to").value = player.primeTo || "";
@@ -627,23 +634,33 @@
         modal.classList.remove("hidden");
     }
 
+    function updateSkinPreview(uuid) {
+        const previewContainer = document.getElementById("skin-preview-container");
+        const previewImg = document.getElementById("skin-preview");
+        if (uuid) {
+            const scale = 8;
+            previewImg.src = `https://s.namemc.com/2d/skin/face.png?id=${uuid}&scale=${scale}`;
+            previewContainer.classList.remove("hidden");
+        }
+    }
+
     async function manualLookupUUID() {
         const nameField = document.getElementById("player-name");
         const uuidField = document.getElementById("player-uuid");
         const name = nameField.value.trim();
         if (!name) return alert("Enter a username first!");
 
-        const originalText = uuidField.placeholder;
-        uuidField.placeholder = "Looking up...";
+        uuidField.placeholder = "Looking up on NameMC...";
         const uuid = await lookupUUID(name);
-        uuidField.placeholder = originalText;
+        uuidField.placeholder = "Will be filled automatically";
 
         if (uuid) {
             uuidField.value = uuid;
-            alert("✅ UUID found and filled!");
+            updateSkinPreview(uuid);
         } else {
-            alert("❌ No UUID found for this name (will use Steve skin)");
+            alert("No UUID found for this name – will use Steve skin");
             uuidField.value = "";
+            document.getElementById("skin-preview-container").classList.add("hidden");
         }
     }
 
@@ -655,7 +672,6 @@
 
         if (!name) return alert("Username is required!");
 
-        // AUTO LOOKUP if no UUID provided
         if (!uuid) {
             const loading = document.getElementById("modal-title");
             const original = loading.textContent;
