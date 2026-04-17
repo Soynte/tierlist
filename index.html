@@ -224,14 +224,25 @@
         return "Rookie";
     }
 
-    // NameMC 2D flat front face with UUID (exactly what you asked for) + fallback
+    // NameMC 2D flat front face (exactly as you wanted)
     function getPlayerHeadUrl(player, size = 64) {
         if (player && player.uuid) {
             const scale = Math.round(size / 16);
             return `https://s.namemc.com/2d/skin/face.png?id=${player.uuid}&scale=${scale}`;
         }
-        // fallback for players without UUID yet
-        return `https://mc-heads.net/avatar/${player.name}/${size}?overlay`;
+        // Default Steve if no UUID
+        return `https://mc-heads.net/avatar/Steve/${size}?overlay`;
+    }
+
+    async function lookupUUID(username) {
+        try {
+            const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+            if (res.ok) {
+                const data = await res.json();
+                return data.id; // UUID without dashes
+            }
+        } catch (e) {}
+        return null; // not found → Steve
     }
 
     function renderCompactTiers(player) {
@@ -540,9 +551,8 @@
                 </div>
             </div>
             <div>
-                <label class="block text-zinc-400 text-sm mb-1">UUID (optional – for perfect NameMC skin)</label>
-                <input id="player-uuid" type="text" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="e.g. 7cd3eba42841cdf9">
-                <p class="text-xs text-zinc-500 mt-1">Get it from namemc.com/profile/USERNAME</p>
+                <label class="block text-zinc-400 text-sm mb-1">UUID (auto-filled from NameMC)</label>
+                <input id="player-uuid" type="text" class="w-full bg-zinc-800 rounded-2xl px-4 py-4 outline-none text-lg" placeholder="Will be filled automatically">
             </div>`;
 
         if (isHoF) {
@@ -616,10 +626,20 @@
 
     function hideModal() { document.getElementById("modal").classList.add("hidden"); }
 
-    function savePlayer() {
-        const name = document.getElementById("player-name").value.trim();
-        const uuid = document.getElementById("player-uuid").value.trim();
+    async function savePlayer() {
+        let name = document.getElementById("player-name").value.trim();
+        let uuid = document.getElementById("player-uuid").value.trim();
+
         if (!name) return alert("Username is required!");
+
+        // AUTO LOOKUP UUID if not provided
+        if (!uuid) {
+            const loading = document.getElementById("modal-title");
+            const originalTitle = loading.textContent;
+            loading.textContent = "Looking up UUID on NameMC...";
+            uuid = await lookupUUID(name);
+            loading.textContent = originalTitle;
+        }
 
         const editId = document.getElementById("edit-index").value;
         const editMode = document.getElementById("edit-mode").value;
@@ -640,7 +660,7 @@
                 const player = data[6].find(p => p.id == editId);
                 if (player) {
                     player.name = name;
-                    player.uuid = uuid || player.uuid;
+                    player.uuid = uuid;
                     player.primeFrom = primeFrom;
                     player.primeTo = primeTo;
                     player.description = description;
@@ -659,7 +679,7 @@
                 if (desiredTier && desiredTier !== "") {
                     if (idx !== -1) {
                         data[cat][idx].rank = desiredTier;
-                        data[cat][idx].uuid = uuid || data[cat][idx].uuid;
+                        data[cat][idx].uuid = uuid;
                     } else {
                         data[cat].push({name, rank: desiredTier, uuid, id: Date.now()});
                     }
@@ -676,7 +696,7 @@
                 const player = data[5].find(p => p.id == editId);
                 if (player) {
                     player.retiredTiers = retiredTiers;
-                    player.uuid = uuid || player.uuid;
+                    player.uuid = uuid;
                 }
             } else {
                 data[5].push({name, retiredTiers, uuid, id: Date.now()});
@@ -689,7 +709,7 @@
                 if (player) {
                     if (tier && tier !== "") player.rank = tier;
                     else data[currentCategory] = data[currentCategory].filter(p => p.id != editId);
-                    player.uuid = uuid || player.uuid;
+                    player.uuid = uuid;
                 }
             } else if (tier && tier !== "") {
                 data[currentCategory].push({name, rank: tier, uuid, id: Date.now()});
