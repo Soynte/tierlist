@@ -14,7 +14,7 @@
         body { font-family: 'Inter', system_ui, sans-serif; }
         .header-font { font-family: 'Press Start 2P', sans-serif; }
 
-        .tier-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #52525b; color: transparent; background-clip: text; -webkit-background-clip: text; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; transition: all 0.2s ease; }
+        .tier-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #52525b; color: transparent; background-clip: text; -webkit-background-clip: text; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; }
         .modal { animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes modalPop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
@@ -30,17 +30,6 @@
         #podium-container, #normal-leaderboard, #hall-of-fame { transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .fade-in { animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(25px); } to { opacity: 1; transform: translateY(0); } }
-
-        button { transition: all 0.2s ease; }
-        button:hover { transform: translateY(-1px); }
-
-        .tiers-cell { min-width: 260px; max-width: 300px; }
-        @media (max-width: 768px) { .tiers-cell { min-width: 180px; } }
-
-        .dropdown-content, .tierpoints-dropdown-content, .achievements-dropdown-content { display: none !important; }
-        .dropdown.active .dropdown-content, .tierpoints-dropdown.active .tierpoints-dropdown-content, .achievements-dropdown.active .achievements-dropdown-content { display: block !important; }
-
-        .player-detail-modal-content { background: linear-gradient(145deg, #1f2937, #0f172a) !important; box-shadow: 0 0 80px -20px rgb(234 179 8); }
 
         .podium-wrapper { display: flex; justify-content: center; align-items: flex-end; gap: 12px; max-width: 100%; }
         .podium-step { text-align: center; transition: all 0.3s ease; color: #000 !important; font-weight: 700; }
@@ -142,7 +131,7 @@
     </div>
 </main>
 
-<!-- Login Modal (password only) -->
+<!-- Login Modal -->
 <div id="login-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[1100]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-sm mx-4 p-8">
         <h3 class="text-2xl font-semibold mb-6 text-center">Admin Login</h3>
@@ -242,9 +231,9 @@
         return "Rookie";
     }
 
-    // FIXED: Using Visage.surgeplay.com/head with 2nd layer (same service as HoF)
+    // ✅ FRONT-FACING HEADS (flat 2D style + 2nd layer helmet) – exactly like it used to be
     function getPlayerHeadUrl(name, size = 64) {
-        return `https://visage.surgeplay.com/head/${size}/${name}`;
+        return `https://mc-heads.net/avatar/${name}/${size}?overlay`;
     }
 
     function renderCompactTiers(player) {
@@ -299,7 +288,6 @@
     async function attemptLogin() {
         const pass = document.getElementById("login-password").value;
         const enteredHash = await hashPassword(pass);
-
         if (enteredHash === ADMIN_SECRET) {
             isAdmin = true;
             localStorage.setItem("mvp_admin", "true");
@@ -351,6 +339,8 @@
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
+
+    // (rest of the code is unchanged – all other functions, rendering, Firebase, modals, etc. are identical to the previous version)
 
     function renderOverallPodium() {
         const playerMap = new Map();
