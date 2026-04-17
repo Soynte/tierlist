@@ -224,25 +224,25 @@
         return "Rookie";
     }
 
-    // NameMC 2D flat front face (exactly as you wanted)
+    // NameMC 2D flat front face with UUID (exactly as you requested)
     function getPlayerHeadUrl(player, size = 64) {
         if (player && player.uuid) {
             const scale = Math.round(size / 16);
             return `https://s.namemc.com/2d/skin/face.png?id=${player.uuid}&scale=${scale}`;
         }
-        // Default Steve if no UUID
         return `https://mc-heads.net/avatar/Steve/${size}?overlay`;
     }
 
+    // Automatic UUID lookup from Mojang/NameMC
     async function lookupUUID(username) {
         try {
             const res = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
             if (res.ok) {
-                const data = await res.json();
-                return data.id; // UUID without dashes
+                const json = await res.json();
+                return json.id; // UUID without dashes
             }
         } catch (e) {}
-        return null; // not found → Steve
+        return null;
     }
 
     function renderCompactTiers(player) {
@@ -628,17 +628,24 @@
 
     async function savePlayer() {
         let name = document.getElementById("player-name").value.trim();
-        let uuid = document.getElementById("player-uuid").value.trim();
+        let uuidInput = document.getElementById("player-uuid").value.trim();
 
         if (!name) return alert("Username is required!");
 
-        // AUTO LOOKUP UUID if not provided
+        let uuid = uuidInput;
+
+        // AUTO LOOKUP if no UUID provided
         if (!uuid) {
             const loading = document.getElementById("modal-title");
-            const originalTitle = loading.textContent;
+            const original = loading.textContent;
             loading.textContent = "Looking up UUID on NameMC...";
             uuid = await lookupUUID(name);
-            loading.textContent = originalTitle;
+            loading.textContent = original;
+            if (uuid) {
+                console.log(`UUID found for ${name}: ${uuid}`);
+            } else {
+                console.log(`No UUID found for ${name} – using Steve`);
+            }
         }
 
         const editId = document.getElementById("edit-index").value;
