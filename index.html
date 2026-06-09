@@ -15,7 +15,6 @@
         .header-font { font-family: 'Press Start 2P', sans-serif; }
 
         .tier-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #52525b; color: transparent; background-clip: text; -webkit-background-clip: text; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; transition: all 0.2s ease; }
-        .tier-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; background: #52525b; color: transparent; background-clip: text; -webkit-background-clip: text; box-shadow: 0 2px 8px rgba(0,0,0,0.3); white-space: nowrap; }
         .modal { animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes modalPop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
@@ -85,12 +84,10 @@
 
         <div class="flex items-center gap-x-3">
             <button onclick="exportJSON()" class="flex items-center gap-x-2 bg-emerald-500 hover:bg-emerald-600 px-4 py-2.5 rounded-2xl font-semibold text-sm transition-colors"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Export JSON</span></button>
-
             <button id="admin-btn" onclick="showLoginModal()" class="flex items-center gap-x-2 bg-zinc-700 hover:bg-zinc-600 px-4 py-2.5 rounded-2xl font-semibold text-sm transition-colors">
                 <i class="fa-solid fa-lock"></i>
                 <span id="admin-btn-text">Admin Login</span>
             </button>
-
             <button onclick="showAddModal()" id="add-btn" class="flex items-center gap-x-2 bg-blue-500 hover:bg-blue-600 px-4 sm:px-5 py-2.5 rounded-2xl font-semibold text-sm transition-colors admin-only hidden"><i class="fa-solid fa-plus"></i><span>ADD PLAYER</span></button>
             <button onclick="resetData()" class="flex items-center gap-x-2 bg-zinc-800 hover:bg-zinc-700 px-3 py-2.5 rounded-2xl text-sm transition-colors admin-only hidden"><i class="fa-solid fa-rotate-right"></i></button>
         </div>
@@ -99,7 +96,7 @@
 
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
     <div id="podium-container"><div id="podium" class="podium-wrapper mb-10"></div></div>
-
+    
     <div id="normal-leaderboard" class="bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl transition-all">
         <div class="px-4 sm:px-8 py-5 border-b border-zinc-800 flex flex-wrap items-center justify-between gap-4">
             <h2 id="category-title" class="text-2xl font-semibold header-font tracking-widest">OVERALL LEADERBOARD</h2>
@@ -143,7 +140,6 @@
     </div>
 </main>
 
-<!-- Login Modal (password only) -->
 <!-- Login Modal -->
 <div id="login-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[1100]">
     <div class="modal bg-zinc-900 rounded-3xl w-full max-w-sm mx-4 p-8">
@@ -220,9 +216,7 @@
     let isAdmin = false;
 
     const ADMIN_SECRET = "4282dd90deae8d7b1eaf9670778503c2f89841124c5d75893f465d5936851b24";
-
     const tierValueMap = {"High Tier 1":100,"Low Tier 1":90,"High Tier 2":80,"Low Tier 2":70,"High Tier 3":60,"Low Tier 3":50,"High Tier 4":40,"Low Tier 4":30,"High Tier 5":20,"Low Tier 5":10};
-
     const gamemodeNames = {1:"Classic",2:"UHC",3:"Only Sword",4:"Pot"};
     const gamemodeIcons = {1:"https://subtiers.net/assets/trident-1c1a3e5a.svg",2:"https://mctiers.com/tier_icons/uhc.svg",3:"https://mctiers.com/tier_icons/sword.svg",4:"https://mctiers.com/tier_icons/pot.svg"};
 
@@ -244,7 +238,7 @@
         return "Rookie";
     }
 
-        // CRAFTY.GG RENDERER - exactly what you asked for
+    // CRAFTY.GG RENDERER
     function getPlayerHeadUrl(name, size = 32) {
         return `https://render.crafty.gg/2d/head/${encodeURIComponent(name)}?size=${size}`;
     }
@@ -271,7 +265,7 @@
     }
 
     function renderAchievementsContent() {
-        const titles = [{title:"Combat Grandmaster",points:"400+"},{title:"Combat Master",points:"250+"},{title:"Combat Ace",points:"100+"},{title:"Combat Specialist",points:"50+"},{title:"Combat Cadet",points:"20+"},{title:"Combat Novice",points:"10+"},{title:"Rookie",points:"<10"}];
+        const titles = [{title:"Combat Grandmaster",points:"400+"},{title:"Combat Master",points:"250+"},{title:"Combat Ace",points:"100+"},{title:"Combat Specialist",points:"50+"},{title:"Combat Cadet",points:"20+"},{title:"Combat Novice",points:"10+"},{title:"Rookie",points:"<10"}]} ;
         let html = '';
         titles.forEach(t => html += `<div class="flex justify-between items-center py-1 px-3 rounded-xl hover:bg-zinc-800"><span class="font-medium text-amber-300">${t.title}</span><span class="font-medium text-zinc-400">${t.points} points</span></div>`);
         return html;
@@ -301,7 +295,6 @@
     async function attemptLogin() {
         const pass = document.getElementById("login-password").value;
         const enteredHash = await hashPassword(pass);
-
         if (enteredHash === ADMIN_SECRET) {
             isAdmin = true;
             localStorage.setItem("mvp_admin", "true");
@@ -353,8 +346,6 @@
         html += `</div>`;
         container.innerHTML = html || `<div class="col-span-3 py-8 text-center text-zinc-400">Add players to see the podium!</div>`;
     }
-
-    // (rest of the code is unchanged – all other functions, rendering, Firebase, modals, etc. are identical to the previous version)
 
     function renderOverallPodium() {
         const playerMap = new Map();
@@ -436,6 +427,7 @@
         let displayedList = currentFilter ? fullList.filter(p=>p.name.toLowerCase().includes(currentFilter.toLowerCase())) : fullList;
         if (displayedList.length === 0) { tbody.innerHTML = ""; empty.classList.remove("hidden"); return; }
         empty.classList.add("hidden");
+
         let html = "";
         displayedList.forEach(player => {
             const trueRank = fullList.findIndex(p => p.id === player.id) + 1;
@@ -770,12 +762,14 @@
         });
         const retiredPlayer = (data[5]||[]).find(pl => pl.name === name);
         if (retiredPlayer) playerData.retiredTiers = retiredPlayer.retiredTiers;
+
         const playerMap = new Map();
         [1,2,3,4].forEach(cat => (data[cat]||[]).forEach(p => {
             let entry = playerMap.get(p.name) || {name:p.name,totalValue:0};
             entry.totalValue += getTierValue(p.rank);
             playerMap.set(p.name, entry);
         }));
+
         const ranked = Array.from(playerMap.values()).sort((a,b)=>b.totalValue-a.totalValue||a.name.localeCompare(b.name));
         const overallRank = ranked.findIndex(p => p.name === name) + 1;
         const achievement = getAchievementTitle(totalPoints);
@@ -785,6 +779,7 @@
         const badgeEl = document.getElementById("detail-badge");
         badgeEl.innerHTML = `<i class="fa-solid fa-fire"></i> ${achievement}`;
         document.getElementById("detail-position").innerHTML = `<div class="text-4xl font-bold text-amber-400">#${overallRank}</div><div><div class="text-blue-400 font-semibold">OVERALL</div><div class="text-xs text-zinc-400">${totalPoints} points</div></div><i class="fa-solid fa-trophy text-3xl text-amber-400"></i>`;
+        
         let tiersHTML = '';
         [1,2,3,4].forEach(cat => {
             const tier = playerData[cat] || (playerData.retiredTiers && playerData.retiredTiers[cat]) || '-';
